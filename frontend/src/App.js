@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { Wand2, Loader2 } from "lucide-react";
+import { Wand2, Loader2, ArrowDown, Sparkles } from "lucide-react";
 import axios from "axios";
 import QuickTemplates from "@/components/QuickTemplates";
 import PersonalizationPanel from "@/components/PersonalizationPanel";
@@ -66,6 +66,16 @@ const LOADING_MSGS = {
 
 const SHOW_VARIATIONS = ["auto", "email", "rewrite", "tone", "paraphrase"];
 const SHOW_PERSONALIZATION = ["auto", "email", "rewrite", "tone", "humanize"];
+
+const EXAMPLE_TEXT = `Senior Product Designer at DesignCo
+
+We're looking for a Senior Product Designer to join our team. Requirements:
+- 4+ years of UX/UI design experience
+- Strong proficiency in Figma and design systems
+- Experience working closely with engineering and product teams
+- Good communication skills and ability to handle feedback
+
+We offer remote work, competitive salary, and equity. Fast-growing team of 40 people building tools used by 50,000+ designers.`;
 
 function getLoadingMsg(mode, expandShortenMode) {
   if (mode === "expand_shorten") {
@@ -148,6 +158,20 @@ export default function App() {
     await runGenerate();
   };
 
+  const handleStartWriting = () => {
+    document.getElementById("main-input")?.focus();
+    document.getElementById("main-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const handleTryExample = () => {
+    setInput(EXAMPLE_TEXT);
+    setMode("email");
+    setResult(null);
+    setTimeout(() => {
+      document.getElementById("main-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  };
+
   const btnLabel = getButtonLabel(mode, expandShortenMode);
   const loadingMsg = getLoadingMsg(mode, expandShortenMode);
 
@@ -162,9 +186,36 @@ export default function App() {
             <Wand2 size={13} strokeWidth={1.5} />
             <span>WriteWise</span>
           </div>
-          <h1 className="heading-1">Write smarter,<br />land the role.</h1>
+
+          <h1 className="heading-1">
+            Write better.<br />Get better results.
+          </h1>
+
           <p className="subheading">
-            Grammar, paraphrasing, emails, summaries. Powered by Claude AI.
+            Fix grammar, rewrite content, generate emails, and improve tone. All in one place.
+          </p>
+
+          <div className="hero-cta-row">
+            <button
+              className="hero-cta-primary"
+              onClick={handleStartWriting}
+              data-testid="cta-start-writing"
+            >
+              <Sparkles size={14} strokeWidth={1.5} />
+              Start Writing
+            </button>
+            <button
+              className="hero-cta-secondary"
+              onClick={handleTryExample}
+              data-testid="cta-try-example"
+            >
+              Try with Example
+              <ArrowDown size={13} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          <p className="hero-helper-text">
+            Paste your text or job post to get started
           </p>
         </header>
 
@@ -204,6 +255,7 @@ export default function App() {
         <section className="input-section">
           <div className="input-label">Your text</div>
           <Textarea
+            id="main-input"
             data-testid="main-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}

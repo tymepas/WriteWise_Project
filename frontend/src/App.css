@@ -60,25 +60,96 @@
 
 .heading-1 {
   font-size: 2.5rem;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.04em;
-  line-height: 1.1;
+  line-height: 1.08;
   color: #FAFAFA;
-  margin: 0 0 0.75rem;
+  margin: 0 0 1rem;
 }
 
 @media (min-width: 768px) {
   .heading-1 {
-    font-size: 3.25rem;
+    font-size: 3.5rem;
   }
 }
 
 .subheading {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #A1A1AA;
-  margin: 0;
+  margin: 0 0 2rem;
   font-weight: 300;
-  line-height: 1.6;
+  line-height: 1.65;
+  max-width: 520px;
+}
+
+/* ===== HERO CTA ===== */
+.hero-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.hero-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #FAFAFA;
+  color: #09090B;
+  border: none;
+  border-radius: 6px;
+  height: 2.75rem;
+  padding: 0 1.4rem;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 120ms ease;
+}
+
+.hero-cta-primary:hover {
+  background-color: #E4E4E7;
+  transform: translateY(-1px);
+}
+
+.hero-cta-primary:active {
+  transform: translateY(0);
+}
+
+.hero-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: #71717A;
+  border: 1px solid #27272A;
+  border-radius: 6px;
+  height: 2.75rem;
+  padding: 0 1.2rem;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, transform 120ms ease;
+}
+
+.hero-cta-secondary:hover {
+  border-color: #52525B;
+  color: #D4D4D8;
+  transform: translateY(-1px);
+}
+
+.hero-cta-secondary:active {
+  transform: translateY(0);
+}
+
+.hero-helper-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: #3F3F46;
+  margin: 0 0 0.25rem;
 }
 
 /* ===== QUICK TEMPLATES ===== */
