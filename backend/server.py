@@ -229,7 +229,7 @@ async def generate_text(req: GenerateRequest):
             output=data.get("output") if not req.variations else None,
             variations=variations,
             mode=req.mode,
-            detected_mode=data.get("detected_mode"),
+            detected_mode=data.get("detected_mode") if req.mode == "auto" else None,
             why_good_fit=why_good_fit,
             evaluation=evaluation,
         )
