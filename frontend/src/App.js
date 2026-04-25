@@ -4,68 +4,68 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { Copy, Check, Loader2, Wand2 } from "lucide-react";
+import { Wand2, Loader2 } from "lucide-react";
 import axios from "axios";
+import QuickTemplates from "@/components/QuickTemplates";
+import PersonalizationPanel from "@/components/PersonalizationPanel";
+import OutputSection from "@/components/OutputSection";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const MODES = [
-  {
-    id: "grammar",
-    label: "Grammar",
-    description: "Fix grammar & spelling errors",
-    contextLabel: null,
-    contextPlaceholder: null,
-  },
-  {
-    id: "email",
-    label: "Email",
-    description: "Draft a professional email or job application",
-    contextLabel: "Additional context (optional)",
-    contextPlaceholder: "e.g. I have 3 years of experience in React...",
-  },
-  {
-    id: "tone",
-    label: "Tone",
-    description: "Rewrite in a specific tone",
-    contextLabel: "Desired tone",
-    contextPlaceholder: "e.g. formal, friendly, confident, polite",
-  },
-  {
-    id: "rewrite",
-    label: "Rewrite",
-    description: "Improve clarity, flow, and impact",
-    contextLabel: "Additional context (optional)",
-    contextPlaceholder: "e.g. make it more concise...",
-  },
+  { id: "auto", label: "Auto", description: "AI detects what you need and acts on it" },
+  { id: "grammar", label: "Grammar", description: "Fix grammar & spelling without changing your voice" },
+  { id: "email", label: "Email", description: "Draft a professional email or job application" },
+  { id: "tone", label: "Tone", description: "Rewrite in a specific tone" },
+  { id: "rewrite", label: "Rewrite", description: "Improve clarity, flow, and impact" },
 ];
 
-const TEXTAREA_PLACEHOLDERS = {
+const PLACEHOLDERS = {
+  auto: "Type or paste anything — grammar fix, email draft, tone rewrite, or clarity improvement...",
   grammar: "Paste your text here to fix grammar and spelling...",
-  email: "Paste a job posting, or describe what email you need...",
-  tone: "Paste the text you want to rewrite...",
-  rewrite: "Paste your text here to improve it...",
+  email: "Paste a job posting or describe the email you need...",
+  tone: "Paste the text you want to rewrite in a different tone...",
+  rewrite: "Paste your text here to improve clarity and flow...",
 };
 
 export default function App() {
-  const [mode, setMode] = useState("grammar");
+  const [mode, setMode] = useState("auto");
   const [input, setInput] = useState("");
   const [context, setContext] = useState("");
-  const [output, setOutput] = useState("");
+  const [experience, setExperience] = useState("");
+  const [targetRole, setTargetRole] = useState("");
+  const [skills, setSkills] = useState("");
+  const [variationsEnabled, setVariationsEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [result, setResult] = useState(null);
 
   const currentMode = MODES.find((m) => m.id === mode);
 
   const handleModeChange = (newMode) => {
     setMode(newMode);
-    setOutput("");
-    setContext("");
+    setResult(null);
   };
+
+  const handleTemplateSelect = (template) => {
+    setInput(template.text);
+    setMode(template.mode);
+    setResult(null);
+    window.scrollTo({ top: 280, behavior: "smooth" });
+  };
+
+  const buildPayload = () => ({
+    mode,
+    input: input.trim(),
+    context: context.trim() || null,
+    experience: experience.trim() || null,
+    target_role: targetRole.trim() || null,
+    skills: skills.trim() || null,
+    variations: variationsEnabled,
+  });
 
   const handleGenerate = async () => {
     if (!input.trim()) {
@@ -73,14 +73,10 @@ export default function App() {
       return;
     }
     setLoading(true);
-    setOutput("");
+    setResult(null);
     try {
-      const { data } = await axios.post(`${API}/generate`, {
-        mode,
-        input: input.trim(),
-        context: context.trim() || null,
-      });
-      setOutput(data.output);
+      const { data } = await axios.post(`${API}/generate`, buildPayload());
+      setResult(data);
     } catch (err) {
       const msg = err?.response?.data?.detail || "Something went wrong. Please try again.";
       toast.error(msg);
@@ -89,31 +85,18 @@ export default function App() {
     }
   };
 
-  const handleCopy = () => {
-    if (!output) return;
-    const doCopy = () => {
-      setCopied(true);
-      toast.success("Copied to clipboard");
-      setTimeout(() => setCopied(false), 2000);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(output).then(doCopy).catch(() => {
-        const el = document.createElement("textarea");
-        el.value = output;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand("copy");
-        document.body.removeChild(el);
-        doCopy();
-      });
-    } else {
-      const el = document.createElement("textarea");
-      el.value = output;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-      doCopy();
+  const handleRegenerate = async () => {
+    if (!input.trim()) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const { data } = await axios.post(`${API}/generate`, buildPayload());
+      setResult(data);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || "Something went wrong. Please try again.";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,6 +117,9 @@ export default function App() {
           </p>
         </header>
 
+        {/* Quick Templates */}
+        <QuickTemplates onSelect={handleTemplateSelect} />
+
         {/* Mode Tabs */}
         <Tabs value={mode} onValueChange={handleModeChange} className="modes-tabs">
           <TabsList className="modes-list" data-testid="mode-tabs">
@@ -148,7 +134,6 @@ export default function App() {
               </TabsTrigger>
             ))}
           </TabsList>
-
           <p className="mode-description">{currentMode.description}</p>
         </Tabs>
 
@@ -159,76 +144,79 @@ export default function App() {
             data-testid="main-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={TEXTAREA_PLACEHOLDERS[mode]}
+            placeholder={PLACEHOLDERS[mode]}
             className="main-textarea"
             disabled={loading}
           />
 
-          {currentMode.contextLabel && (
-            <div className="context-row">
-              <div className="input-label">{currentMode.contextLabel}</div>
-              <Input
-                data-testid="context-input"
-                value={context}
-                onChange={(e) => setContext(e.target.value)}
-                placeholder={currentMode.contextPlaceholder}
-                className="context-input"
+          {/* Personalization Panel */}
+          <PersonalizationPanel
+            experience={experience}
+            targetRole={targetRole}
+            skills={skills}
+            onExperienceChange={setExperience}
+            onTargetRoleChange={setTargetRole}
+            onSkillsChange={setSkills}
+            disabled={loading}
+          />
+
+          {/* Context */}
+          <div>
+            <div className="input-label">Additional context (optional)</div>
+            <Input
+              data-testid="context-input"
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder={
+                mode === "tone"
+                  ? "e.g. friendly, confident, formal, polite..."
+                  : "e.g. Make it more confident, applying for a startup role..."
+              }
+              className="context-input"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Controls Row */}
+          <div className="controls-row">
+            <Button
+              data-testid="generate-btn"
+              onClick={handleGenerate}
+              disabled={loading}
+              className="generate-btn"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={15} className="spin" strokeWidth={1.5} />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <Wand2 size={15} strokeWidth={1.5} />
+                  Generate
+                </>
+              )}
+            </Button>
+
+            <div className="variations-toggle" data-testid="variations-toggle-row">
+              <Switch
+                data-testid="variations-switch"
+                checked={variationsEnabled}
+                onCheckedChange={setVariationsEnabled}
                 disabled={loading}
               />
+              <span className="toggle-label">Multiple versions</span>
             </div>
-          )}
-
-          <Button
-            data-testid="generate-btn"
-            onClick={handleGenerate}
-            disabled={loading}
-            className="generate-btn"
-          >
-            {loading ? (
-              <>
-                <Loader2 size={15} className="spin" strokeWidth={1.5} />
-                Generating…
-              </>
-            ) : (
-              <>
-                <Wand2 size={15} strokeWidth={1.5} />
-                Generate
-              </>
-            )}
-          </Button>
+          </div>
         </section>
 
-        {/* Output Section */}
-        {output && (
-          <section className="output-section" data-testid="output-section">
-            <div className="output-header">
-              <div className="input-label">Result</div>
-              <Button
-                data-testid="copy-btn"
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="copy-btn"
-              >
-                {copied ? (
-                  <>
-                    <Check size={13} strokeWidth={1.5} />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy size={13} strokeWidth={1.5} />
-                    Copy
-                  </>
-                )}
-              </Button>
-            </div>
-            <Card className="output-card" data-testid="output-card">
-              <CardContent className="output-content">
-                <pre className="output-text">{output}</pre>
-              </CardContent>
-            </Card>
-          </section>
+        {/* Output */}
+        {result && (
+          <OutputSection
+            result={result}
+            onRegenerate={handleRegenerate}
+            loading={loading}
+          />
         )}
       </main>
 
