@@ -91,11 +91,30 @@ export default function App() {
 
   const handleCopy = () => {
     if (!output) return;
-    navigator.clipboard.writeText(output).then(() => {
+    const doCopy = () => {
       setCopied(true);
       toast.success("Copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
-    });
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(output).then(doCopy).catch(() => {
+        const el = document.createElement("textarea");
+        el.value = output;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+        doCopy();
+      });
+    } else {
+      const el = document.createElement("textarea");
+      el.value = output;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      doCopy();
+    }
   };
 
   return (
