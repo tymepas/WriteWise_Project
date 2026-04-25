@@ -1,0 +1,91 @@
+{
+  "theme": "dark",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "design_philosophy": "Ultra-minimalist, distraction-free editorial workspace. Uses absolute monochrome with stark high-contrast elements to enforce focus. No generic SaaS blue or purple. Content is king; the UI fades away.",
+  "colors": {
+    "background": "#09090B",
+    "surface": "#121214",
+    "surface_hover": "#18181B",
+    "border": "#27272A",
+    "text_primary": "#FAFAFA",
+    "text_secondary": "#A1A1AA",
+    "accent": "#FFFFFF",
+    "accent_foreground": "#09090B",
+    "danger": "#EF4444",
+    "success": "#10B981"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Cabinet Grotesk, sans-serif",
+      "body": "IBM Plex Sans, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "rules": {
+      "h1": "text-4xl tracking-tighter font-medium",
+      "h2": "text-2xl tracking-tight font-medium",
+      "body": "text-base leading-relaxed text-zinc-300",
+      "labels": "text-xs tracking-[0.2em] uppercase text-zinc-500 font-mono"
+    }
+  },
+  "layout": {
+    "container": "max-w-[900px] mx-auto w-full px-6 py-12 md:py-24",
+    "spacing": "Use p-6 or p-8 for internal card padding. gap-8 between major vertical sections.",
+    "alignment": "Strictly left-aligned internal content to maintain reading flow. Container is centered.",
+    "background_strategy": "Fixed textured background image with low opacity to prevent pure flat black deadness."
+  },
+  "components": {
+    "tabs": {
+      "library": "shadcn/ui",
+      "customization": "Remove default gray background. Use a transparent list with a bottom border (border-b border-zinc-800). Active tab gets a stark white bottom border (border-white) and white text. Inactive tabs are zinc-500 hover:text-zinc-300."
+    },
+    "textarea": {
+      "library": "shadcn/ui",
+      "customization": "Massive, breathable text area. h-[40vh] minimum. bg-transparent, border-zinc-800, focus-visible:ring-1 focus-visible:ring-white. No heavy shadows. text-lg for comfortable writing."
+    },
+    "input": {
+      "library": "shadcn/ui",
+      "customization": "Used for Context/Tone. bg-transparent border-zinc-800 focus-visible:ring-1 focus-visible:ring-white h-12."
+    },
+    "button": {
+      "library": "shadcn/ui",
+      "customization": "Primary CTA (Generate) must be bg-white text-black hover:bg-zinc-200 rounded-none or ultra-subtle rounded-md. Secondary buttons (Copy) are ghost or outline with border-zinc-800 text-zinc-300."
+    },
+    "card": {
+      "library": "shadcn/ui",
+      "customization": "Used for Output Display. bg-zinc-900/30 border border-zinc-800 backdrop-blur-sm. MUST have p-8 to give the generated text room to breathe."
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "instructions": "Use minimalist icons. 1.25 stroke width for a lighter, more refined look."
+  },
+  "media": {
+    "images": [
+      {
+        "category": "background",
+        "url": "https://static.prod-images.emergentagent.com/jobs/2dae909f-c163-40be-a4eb-7a517ea94eab/images/f1b77d4946055e61ecca864e29a5653714ad04db0e75679555e53941f72b9006.png",
+        "description": "Dark ambient texture. Use as a fixed background (e.g., fixed inset-0 object-cover opacity-20 pointer-events-none -z-10) to add subtle grain and depth to the dark theme."
+      }
+    ]
+  },
+  "interactions_and_motion": {
+    "hover_states": "All interactables must have a clear hover state. Text colors shift from zinc-500 to zinc-300 to white.",
+    "focus": "Use ring-1 ring-white ring-offset-0 ring-offset-transparent for maximum crispness.",
+    "transitions": "transition-all duration-200 ease-out"
+  },
+  "testing": {
+    "attributes": "Add data-testid to all interactive elements (tabs, textarea, context input, generate button, output container, and copy button)."
+  },
+  "instructions_to_main_agent": [
+    "Build a single-page React application using Tailwind CSS and Shadcn UI components.",
+    "Implement the 4 modes (Grammar, Email, Tone, Rewrite) using Shadcn Tabs at the top.",
+    "Do NOT build a sidebar. The entire application must sit within a max-w-[900px] horizontally centered container.",
+    "Include a large, spacious textarea for the main text input, and a smaller input field directly below it for optional context or tone instructions.",
+    "The output area should be displayed seamlessly below the input area after text generation, inside a styled Card component, featuring a prominent 'Copy' button (use lucide-react 'Copy' icon).",
+    "Use Sonner for toast notifications (e.g., 'Copied to clipboard').",
+    "Ensure the background image is applied globally with low opacity to give texture to the pure dark theme.",
+    "Import and apply Cabinet Grotesk for headings, IBM Plex Sans for body text, and JetBrains Mono for small labels or code snippets.",
+    "Make sure all components implement the 'data-testid' attribute as specified for testing.",
+    "Integrate the frontend with the FastAPI backend endpoint for Claude Sonnet 4.5 text generation."
+  ]
+}
