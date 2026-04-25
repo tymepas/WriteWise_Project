@@ -34,7 +34,7 @@
 
 @media (min-width: 768px) {
   .container {
-    padding: 5rem 1.5rem 6rem;
+    padding: 4.5rem 1.5rem 6rem;
   }
 }
 
@@ -69,7 +69,7 @@
 
 @media (min-width: 768px) {
   .heading-1 {
-    font-size: 3.5rem;
+    font-size: 3.25rem;
   }
 }
 
@@ -116,7 +116,7 @@
 
 /* ===== TABS ===== */
 .modes-tabs {
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
 }
 
 .modes-list {
@@ -129,6 +129,13 @@
   display: flex;
   width: 100%;
   justify-content: flex-start;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.modes-list::-webkit-scrollbar {
+  display: none;
 }
 
 .mode-trigger {
@@ -137,9 +144,11 @@
   border-bottom: 2px solid transparent !important;
   border-radius: 0 !important;
   color: #71717A !important;
-  padding: 0.65rem 1rem !important;
-  font-size: 0.875rem !important;
+  padding: 0.6rem 0.75rem !important;
+  font-size: 0.82rem !important;
   font-weight: 400 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   transition: color 150ms ease, border-color 150ms ease !important;
   margin-bottom: -1px;
   cursor: pointer;
@@ -155,11 +164,53 @@
 }
 
 .mode-description {
-  margin: 0.75rem 0 0;
-  font-size: 0.8rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
   color: #71717A;
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: 0.02em;
+}
+
+/* ===== TAB OPTIONS (sub-options per mode) ===== */
+.tab-options {
+  margin-bottom: 1.25rem;
+  animation: fadeIn 0.18s ease-out;
+}
+
+.option-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+.option-pill {
+  background: transparent;
+  border: 1px solid #27272A;
+  color: #71717A;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 4px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+}
+
+.option-pill:hover:not(:disabled) {
+  border-color: #52525B;
+  color: #D4D4D8;
+}
+
+.option-pill.active {
+  background: #FAFAFA;
+  border-color: #FAFAFA;
+  color: #09090B;
+}
+
+.option-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ===== SHARED LABEL ===== */
@@ -180,7 +231,7 @@
 }
 
 .main-textarea {
-  min-height: 220px !important;
+  min-height: 210px !important;
   background: transparent !important;
   border: 1px solid #27272A !important;
   border-radius: 6px !important;
@@ -342,7 +393,7 @@
 }
 
 .toggle-label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #71717A;
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: 0.05em;

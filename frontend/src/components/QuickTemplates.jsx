@@ -6,7 +6,7 @@ const TEMPLATES = [
     label: "Job Application",
     Icon: Briefcase,
     mode: "email",
-    text: `Software Engineer (Full Stack) — TechCorp
+    text: `Software Engineer (Full Stack) at TechCorp
 
 Requirements:
 - 3+ years of experience with React and Node.js
@@ -14,21 +14,21 @@ Requirements:
 - Experience with cloud platforms (AWS/GCP)
 - Excellent written and verbal communication
 
-About us: We're a fast-growing startup building developer tools used by 10,000+ teams. Remote-first, competitive salary + equity.`,
+About us: We are a fast-growing startup building developer tools used by 10,000+ teams. Remote-first, competitive salary and equity.`,
   },
   {
     id: "follow-up",
     label: "Follow-up Email",
     Icon: ArrowRight,
     mode: "email",
-    text: `I interviewed for the Product Manager role at Acme Inc last Tuesday. The conversation was engaging — especially the discussion about their 0-to-1 product roadmap. I wanted to follow up on my application and reiterate my strong interest in the position.`,
+    text: `I interviewed for the Product Manager role at Acme Inc last Tuesday. The conversation was engaging, especially the discussion about their 0-to-1 product roadmap. I wanted to follow up on my application and reiterate my strong interest in the position.`,
   },
   {
     id: "cold-outreach",
     label: "Cold Outreach",
     Icon: Send,
     mode: "email",
-    text: `I came across [COMPANY] and I'm impressed by your work in [INDUSTRY]. I'm a [YOUR ROLE] with experience in [SKILLS/AREA]. I'd love to explore if there are any opportunities where I could contribute to your team — even informally.`,
+    text: `I came across [COMPANY] and I'm impressed by your work in [INDUSTRY]. I'm a [YOUR ROLE] with experience in [SKILLS/AREA]. I'd love to explore if there are any opportunities where I could contribute to your team, even informally.`,
   },
   {
     id: "referral",
