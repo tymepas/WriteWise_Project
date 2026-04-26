@@ -20,7 +20,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const MODES = [
-  { id: "auto",          label: "Auto",             description: "AI detects what you need and acts on it" },
+  { id: "auto",          label: "Auto",             badge: "Recommended", description: "AI detects what you need and acts on it" },
   { id: "grammar",       label: "Grammar",           description: "Fix grammar and spelling without changing your voice" },
   { id: "email",         label: "Email",             description: "Draft a professional email or job application" },
   { id: "tone",          label: "Tone",              description: "Rewrite in a specific tone" },
@@ -32,7 +32,7 @@ const MODES = [
 ];
 
 const PLACEHOLDERS = {
-  auto:           "Type or paste anything. Grammar fix, email draft, tone rewrite, clarity improvement...",
+  auto:           "Paste a job post, draft email, or rough text to get started...",
   grammar:        "Paste your text here to fix grammar and spelling...",
   email:          "Paste a job posting or describe the email you need...",
   tone:           "Paste the text you want to rewrite in a different tone...",
@@ -189,11 +189,11 @@ export default function App() {
           </div>
 
           <h1 className="heading-1">
-            Write better.<br />Get better results.
+            Write better.<br />Get noticed.
           </h1>
 
           <p className="subheading">
-            Fix grammar, rewrite content, generate emails, and improve tone. All in one place.
+            From fixing grammar to crafting job-winning emails, everything you need to write with confidence.
           </p>
 
           <div className="hero-cta-row">
@@ -203,7 +203,7 @@ export default function App() {
               data-testid="cta-start-writing"
             >
               <Sparkles size={14} strokeWidth={1.5} />
-              Start Writing
+              Start Writing Smarter
             </button>
             <button
               className="hero-cta-secondary"
@@ -216,7 +216,7 @@ export default function App() {
           </div>
 
           <p className="hero-helper-text">
-            Paste your text or job post to get started
+            Paste your text or job post to begin
           </p>
         </header>
 
@@ -230,10 +230,11 @@ export default function App() {
               <TabsTrigger
                 key={m.id}
                 value={m.id}
-                className="mode-trigger"
+                className={`mode-trigger${m.id === "auto" ? " mode-trigger-auto" : ""}`}
                 data-testid={`mode-tab-${m.id}`}
               >
                 {m.label}
+                {m.badge && <span className="tab-badge">{m.badge}</span>}
               </TabsTrigger>
             ))}
           </TabsList>
