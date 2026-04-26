@@ -13,6 +13,8 @@ import QuickTemplates from "@/components/QuickTemplates";
 import PersonalizationPanel from "@/components/PersonalizationPanel";
 import OutputSection from "@/components/OutputSection";
 import TabOptions from "@/components/TabOptions";
+import WritewiseLogo from "@/components/WritewiseLogo";
+import LoadingCard from "@/components/LoadingCard";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -182,9 +184,8 @@ export default function App() {
       <main className="container">
         {/* Header */}
         <header className="header">
-          <div className="header-badge">
-            <Wand2 size={13} strokeWidth={1.5} />
-            <span>WriteWise</span>
+          <div className="header-logo-row">
+            <WritewiseLogo iconSize={26} />
           </div>
 
           <h1 className="heading-1">
@@ -325,8 +326,13 @@ export default function App() {
           </div>
         </section>
 
+        {/* Loading Card */}
+        {loading && (
+          <LoadingCard mode={mode === "expand_shorten" ? expandShortenMode : mode} />
+        )}
+
         {/* Output */}
-        {result && (
+        {result && !loading && (
           <OutputSection
             result={result}
             onRegenerate={runGenerate}
