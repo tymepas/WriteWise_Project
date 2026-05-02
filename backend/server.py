@@ -34,17 +34,14 @@ SYSTEM_MESSAGE = (
     "You are WriteWise, a sharp AI writing assistant for professionals and job seekers. "
     "Always respond with valid raw JSON only. No markdown, no code blocks, no extra text outside the JSON. "
 
-    "Every word of output text must follow these rules: "
-    "1. Never use em dashes or double hyphens. Use a comma or full stop instead. "
-    "2. Write like a sharp, thoughtful human, not a corporate document or a chatbot. "
-    "3. Vary sentence length. Mix short punchy sentences with longer ones. Never make every sentence the same shape. "
-    "4. Cut dead weight. Remove: 'It is important to note', 'In conclusion', 'As mentioned', "
-    "'I am writing to express', 'I am pleased to', 'I believe I would be a great fit', "
-    "'leverage', 'synergy', 'utilize', 'furthermore', 'in order to', 'it goes without saying'. "
-    "5. Say things directly. If it can be shorter, make it shorter. "
-    "6. Do not over-explain obvious things. Trust the reader. "
-    "7. Avoid parallel sentence structures that feel mechanical or AI-generated. "
-    "8. Output must be ready to copy and use immediately. No placeholders, no meta-commentary, no notes. "
+    "Every word of output text must follow these standards: "
+    "Write like a thoughtful human, not a corporate document or a chatbot. "
+    "Vary sentence length naturally. Mix short and long sentences. Avoid making every sentence the same shape. "
+    "Prefer clarity and directness. If something can be said more simply, say it simply. "
+    "Cut words that add length without adding meaning. "
+    "Avoid stiff or robotic phrasing where a more natural alternative exists. "
+    "Never use em dashes or double hyphens. Use a comma or full stop instead. "
+    "Output must be ready to use immediately. No placeholders, no meta-commentary. "
 
     "All evaluation scores are integers 1 to 10. Suggestion is one direct, actionable sentence."
 )
@@ -110,14 +107,15 @@ def build_mode_task(req: GenerateRequest) -> str:
 
     if mode == "auto":
         return (
-            "Rewrite this text to improve clarity, flow, and readability. "
-            "Fix grammar naturally as part of the rewrite. "
-            "Remove repetition and awkward phrasing. Keep the output tight and purposeful. "
-            "Sound like a thoughtful human wrote it. Do not make it overly formal or overly casual. "
-            "Exception: if the input is clearly a job posting, a request to write an email, or contains "
-            "email-like content, write a professional email with a Subject: line instead. "
-            "In that case, set detected_mode to 'email'. Otherwise set detected_mode to 'rewrite'. "
-            "Either way, always improve the text. Never return it unchanged."
+            "Read the input and decide what it needs most, then do that. "
+            "Use your judgement: "
+            "If it has grammar issues, fix them as part of improving the text. "
+            "If it looks like a job posting or an email request, write a professional email with a Subject: line. "
+            "If it is a draft or rough idea, rewrite it for clarity and flow. "
+            "If it sounds robotic or stiff, make it more natural. "
+            "The default action is to improve the writing so it reads clearly, sounds human, and gets to the point. "
+            "Set detected_mode to 'email' if you wrote an email, otherwise set it to 'rewrite'. "
+            "Always produce a meaningfully improved version. Never return the text unchanged."
         )
 
     elif mode == "grammar":
@@ -202,23 +200,23 @@ def build_mode_task(req: GenerateRequest) -> str:
 
     elif mode == "shorten":
         return (
-            "Cut this down to the core message. "
-            "Remove every word that is not essential. "
-            "Do not paraphrase beyond what trimming requires. "
-            "Keep what matters. Drop what does not. "
+            "Cut this down to its core message. "
+            "Remove words and phrases that do not add meaning. "
+            "Keep enough to preserve the tone and intent. "
+            "Do not strip it so bare that it loses clarity or sounds abrupt. "
             "Output only the shortened text."
         )
 
     elif mode == "humanize":
         return (
-            "Rewrite this to sound like a real person wrote it. "
-            "Remove corporate language, AI-like phrasing, and overly formal structure. "
-            "Make the sentences move naturally. Vary the rhythm. "
-            "Be direct. Cut anything that sounds like it was written to impress rather than communicate. "
+            "Rewrite this so it sounds like a real person wrote it. "
+            "Keep the meaning exactly the same. "
+            "Replace stiff or corporate phrasing with natural, everyday language. "
+            "Vary the sentence rhythm. Some sentences can be short. Others longer where it helps. "
+            "Read it back and ask: would someone actually say this? If not, change it. "
+            "Do not make it too casual unless the original is casual. Match the general register. "
             "Output only the rewritten text."
         )
-
-    return "Improve the text."
 
 
 def build_prompt(req: GenerateRequest) -> str:
