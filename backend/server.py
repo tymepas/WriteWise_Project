@@ -31,22 +31,30 @@ VALID_MODES = {
 }
 
 SYSTEM_MESSAGE = (
-    "You are WriteWise, a smart AI writing assistant for professionals and job seekers. "
+    "You are WriteWise, a sharp AI writing assistant for professionals and job seekers. "
     "Always respond with valid raw JSON only. No markdown, no code blocks, no extra text outside the JSON. "
-    "CRITICAL writing rules that apply to every word of output text: "
-    "Never use em dashes or double hyphens. Replace them with commas or full stops. "
-    "Write naturally and conversationally. Vary sentence length. "
-    "Avoid AI-sounding patterns like overuse of formal connectors, perfectly balanced sentences, or repetitive structure. "
-    "Sound human. Imperfect is better than robotic. "
-    "All scores are integers 1 to 10. Suggestion is 1 to 2 sentences max."
+
+    "Every word of output text must follow these rules: "
+    "1. Never use em dashes or double hyphens. Use a comma or full stop instead. "
+    "2. Write like a sharp, thoughtful human, not a corporate document or a chatbot. "
+    "3. Vary sentence length. Mix short punchy sentences with longer ones. Never make every sentence the same shape. "
+    "4. Cut dead weight. Remove: 'It is important to note', 'In conclusion', 'As mentioned', "
+    "'I am writing to express', 'I am pleased to', 'I believe I would be a great fit', "
+    "'leverage', 'synergy', 'utilize', 'furthermore', 'in order to', 'it goes without saying'. "
+    "5. Say things directly. If it can be shorter, make it shorter. "
+    "6. Do not over-explain obvious things. Trust the reader. "
+    "7. Avoid parallel sentence structures that feel mechanical or AI-generated. "
+    "8. Output must be ready to copy and use immediately. No placeholders, no meta-commentary, no notes. "
+
+    "All evaluation scores are integers 1 to 10. Suggestion is one direct, actionable sentence."
 )
 
 PARAPHRASE_STYLES = {
-    "standard": "natural rewrite with varied wording and sentence structure",
-    "fluency": "smooth, easy-to-read version with improved flow",
-    "formal": "professional and academic register",
-    "simple": "plain language with shorter sentences, easy to understand",
-    "creative": "inventive rewriting with fresh, vivid phrasing",
+    "standard": "varied wording and sentence structure, same register as the original",
+    "fluency":  "smoother flow and easier reading, fix anything that sounds clunky",
+    "formal":   "professional and academic register, precise word choices",
+    "simple":   "plain everyday language, short sentences, no jargon",
+    "creative": "fresh and inventive phrasing, different angle on the same idea",
 }
 
 
@@ -102,71 +110,114 @@ def build_mode_task(req: GenerateRequest) -> str:
 
     if mode == "auto":
         return (
-            "Detect the best processing mode for this input:\n"
-            '- "grammar": text has grammar or spelling errors needing correction\n'
-            '- "email": input is a job posting, email request, or needs to become a professional email\n'
-            '- "tone": context mentions a specific tone to apply\n'
-            '- "rewrite": text needs clarity or flow improvement\n'
-            '- "paraphrase": user wants the same meaning in different words\n'
-            '- "summarize": user wants a shorter summary or key points\n'
-            '- "humanize": text sounds robotic or AI-generated\n'
-            "Then apply the appropriate transformation."
+            "Rewrite this text to improve clarity, flow, and readability. "
+            "Fix grammar naturally as part of the rewrite. "
+            "Remove repetition and awkward phrasing. Keep the output tight and purposeful. "
+            "Sound like a thoughtful human wrote it. Do not make it overly formal or overly casual. "
+            "Exception: if the input is clearly a job posting, a request to write an email, or contains "
+            "email-like content, write a professional email with a Subject: line instead. "
+            "In that case, set detected_mode to 'email'. Otherwise set detected_mode to 'rewrite'. "
+            "Either way, always improve the text. Never return it unchanged."
         )
+
     elif mode == "grammar":
-        return "Fix all grammar and spelling errors. Preserve meaning and tone exactly. No explanations."
-    elif mode == "email":
-        tone_hint = f" Use a {ctx} tone." if ctx else ""
         return (
-            "Write a professional email. If input is a job posting, write a personalized job application email. "
-            "If rough text, polish it into a professional email. "
-            "Start with 'Subject:' on the first line. Keep it 120 to 180 words. "
-            "Be specific and human. Do not start with 'I am writing to' or similar cliches."
+            "Fix all grammar and spelling errors. "
+            "While fixing, smooth out any phrasing that sounds awkward or unnatural. "
+            "Do not change the meaning, structure, or tone beyond what grammar requires. "
+            "Output only the corrected text."
+        )
+
+    elif mode == "email":
+        tone_hint = f" Write in a {ctx} tone." if ctx else ""
+        return (
+            "Write a professional email based on the input. "
+            "If the input is a job posting, write a targeted job application email. "
+            "If it is rough text or a request, shape it into a polished, ready-to-send email. "
+            "Start with 'Subject:' on the first line. "
+            "Keep it 120 to 180 words. "
+            "Open with something specific to the context. Skip all cliches. "
+            "Make it sound like a real person wrote it, not a template. "
+            "Use the user profile to make it genuinely specific, not just slot-filled."
             f"{tone_hint}"
         )
+
     elif mode == "tone":
         target = ctx if ctx else "professional"
-        return f"Rewrite in a {target} tone. Keep the original meaning exactly. Output only the rewritten text."
+        return (
+            f"Rewrite in a {target} tone. "
+            "Keep the exact meaning. "
+            "Do not add ideas or remove any. "
+            "Make it sound like someone who naturally speaks that way wrote it, "
+            "not like a tone example from a writing guide. "
+            "Output only the rewritten text."
+        )
+
     elif mode == "rewrite":
-        return "Improve clarity, readability, and flow. Remove redundancy. Make it concise and impactful. Output only the rewritten text."
+        return (
+            "Rewrite for clarity and impact. "
+            "Tighten the structure. Cut anything that does not earn its place. "
+            "Say things more directly. Prefer shorter over longer wherever meaning allows. "
+            "Keep the voice natural and the result easy to read. "
+            "Do not add ideas that were not in the original. "
+            "Output only the rewritten text."
+        )
+
     elif mode == "paraphrase":
         style_key = (req.paraphrase_mode or "standard").lower()
         style_desc = PARAPHRASE_STYLES.get(style_key, PARAPHRASE_STYLES["standard"])
         return (
-            f"Paraphrase the following text using a {style_key} style: {style_desc}. "
-            "Preserve the original meaning but change structure and wording. Output only the paraphrased text."
+            f"Paraphrase using a {style_key} style: {style_desc}. "
+            "Change the wording and sentence shapes. Keep the meaning exactly the same. "
+            "Do not add ideas or lose any. "
+            "Output only the paraphrased text."
         )
+
     elif mode == "summarize":
         fmt = (req.summary_type or "short").lower()
         if fmt == "bullets":
             return (
-                "Summarize the following text as 4 to 6 clear bullet points. "
-                "Start each bullet with a dash and a space. Capture the most important information. "
+                "Summarize as 4 to 6 bullet points. "
+                "Start each with '- '. "
+                "Most important points only. Keep each bullet tight and scannable. "
+                "No padding, no repetition. "
                 "Output only the bullet points."
             )
         else:
             return (
-                "Write a 2 to 3 sentence summary of the following text. "
-                "Be concise and capture the key points. Output only the summary."
+                "Write a 2 to 3 sentence summary. "
+                "Hit the key points only. "
+                "No fluff, no qualifications, no throat-clearing. "
+                "Output only the summary."
             )
+
     elif mode == "expand":
         return (
-            "Expand the following text by adding relevant detail, depth, and context. "
-            "Make it more complete and informative while keeping a natural, conversational tone. "
+            "Expand this text by adding context and detail that genuinely helps the reader. "
+            "Only add things that earn their place. "
+            "Do not pad it out, do not over-explain obvious things, do not repeat yourself. "
+            "Keep the structure tight and the voice human. "
             "Output only the expanded text."
         )
+
     elif mode == "shorten":
         return (
-            "Shorten the following text to its core message. "
-            "Remove redundancy and unnecessary words. Keep only what truly matters. "
+            "Cut this down to the core message. "
+            "Remove every word that is not essential. "
+            "Do not paraphrase beyond what trimming requires. "
+            "Keep what matters. Drop what does not. "
             "Output only the shortened text."
         )
+
     elif mode == "humanize":
         return (
-            "Rewrite the following text to sound natural and human. "
-            "Remove AI-like phrasing, overly formal language, and robotic structure. "
-            "Make it conversational and realistic. Vary sentence length naturally. "
+            "Rewrite this to sound like a real person wrote it. "
+            "Remove corporate language, AI-like phrasing, and overly formal structure. "
+            "Make the sentences move naturally. Vary the rhythm. "
+            "Be direct. Cut anything that sounds like it was written to impress rather than communicate. "
             "Output only the rewritten text."
         )
+
     return "Improve the text."
 
 
@@ -208,11 +259,15 @@ def build_prompt(req: GenerateRequest) -> str:
         f"Input:\n{req.input}"
         f"{context_line}\n\n"
         "Rules:\n"
-        f"- why_good_fit: Include 2 to 3 bullet strings only if mode is email and input clearly resembles a job posting. Otherwise null.\n"
-        "- evaluation.personalization: Score 8 to 10 if user profile was meaningfully used in the output.\n"
-        "- For variations: Professional is formal and polished. Confident is assertive and direct. Friendly is warm and conversational.\n"
-        "- NEVER use em dashes or double hyphens in any output text. Use commas or full stops instead.\n"
-        "- All output must sound human and natural. Vary sentence length.\n\n"
+        "- why_good_fit: Include 2 to 3 bullet strings only if this is email mode AND input clearly looks like "
+        "a job posting (has role title, requirements, or company info). Each bullet must be specific and concrete, "
+        "not generic. Otherwise set to null.\n"
+        "- evaluation.personalization: Score 8 to 10 only if the user profile was meaningfully woven into the output.\n"
+        "- evaluation.suggestion: One direct, actionable improvement. No fluff.\n"
+        "- For variations: Professional means polished and formal. Confident means direct and assertive. "
+        "Friendly means warm and approachable. Each must feel genuinely different, not just word-swapped.\n"
+        "- NEVER use em dashes or double hyphens anywhere in any output.\n"
+        "- Every output must be ready to use immediately. No meta-commentary, no notes, no explanations.\n\n"
         f"Respond ONLY with this JSON (no markdown, no backticks):\n{output_schema}"
     )
 
