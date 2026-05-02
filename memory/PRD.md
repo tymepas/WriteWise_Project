@@ -1,73 +1,62 @@
 # WriteWise — AI Writing Platform PRD
 
 ## Problem Statement
-Transform the AI Writing Assistant into WriteWise, a full-featured writing platform similar to QuillBot, optimized for job seekers and professionals.
+WriteWise is an AI-powered writing platform for professionals and job seekers. It combines general writing tools (grammar, paraphrase, summarize, humanize) with job-focused intelligence (email generation, tone rewriting) powered by Claude Sonnet 4.5.
 
 ## Architecture
-- **Frontend**: React + Tailwind CSS + Shadcn UI (single-page, component-based)
-- **Backend**: FastAPI + Motor (MongoDB) + emergentintegrations (Claude Sonnet 4.5)
-- **AI**: Claude Sonnet 4.5 via Emergent Universal LLM Key
+- **Frontend**: React 19, Tailwind CSS, Shadcn UI, Lucide React
+- **Backend**: FastAPI, Python, Motor (async MongoDB)
+- **AI**: Claude Sonnet 4.5 via `emergentintegrations` (Emergent Universal LLM Key)
+- **Database**: MongoDB (session metadata only)
 
-## User Personas
-- Job seekers applying for roles (primary)
-- Professionals needing to polish written communication (secondary)
-- Students improving academic writing (tertiary)
+## Writing Modes (FROZEN — do not modify prompts)
 
-## What's Been Implemented
+| Mode | Behavior |
+|------|----------|
+| Auto | Intent-based routing. Smart rewrite by default. Routes to email if input is job-related or email-like. |
+| Grammar | Fixes errors, smooths awkward phrasing. Preserves meaning and tone. |
+| Email | Professional email with Subject line. Structured: opening, body, close. Natural not templated. |
+| Tone | Rewrites in specified tone. Matches register of original. |
+| Rewrite | Tightens clarity and flow. Removes redundancy. Does not add ideas. |
+| Paraphrase | 5 styles: Standard, Fluency, Formal, Simple, Creative. Same meaning, different shape. |
+| Summarize | Short (2-3 sentences) or Bullet Points (4-6 bullets). |
+| Expand | Adds useful context and detail. No filler. |
+| Shorten | Cuts to core message. Preserves tone and intent. |
+| Humanize | Matches original register. Professional stays professional. Casual becomes conversational. |
 
-### Phase 1 — MVP (Feb 2026)
-- 4 writing modes: Grammar, Email, Tone, Rewrite
-- Claude Sonnet 4.5 integration
-- Dark theme UI
+## AI Prompt Status: FROZEN (Apr 2026)
+- SYSTEM_MESSAGE: tone-matching, directness, no em dashes, intent preservation
+- All 10 mode prompts: finalized and stable
+- Global rules: intent protection, tone-context matching, no meta-commentary
+- Do not modify prompts without explicit user approval
 
-### Phase 2 — Enhanced (Feb 2026)
-- Auto mode (default), Personalization panel
-- Output variations (3 versions), Why Good Fit bullets
-- Output evaluation scores, Quick templates, Regenerate button
+## Key Features
+- Personalization Panel (Experience, Target Role, Skills)
+- Output Variations (3 versions: Professional, Confident, Friendly)
+- Why You're a Good Fit bullets (email + job post)
+- Output Evaluation scores (Clarity, Professionalism, Personalization) + suggestion
+- Quick Templates: Job Application, Follow-up Email, Cold Outreach, Referral Request
+- Regenerate button
+- Copy to clipboard (with fallback)
+- WriteWise SVG logo with gradient W icon
+- Loading card with animated W icon
+- Dynamic loading messages per mode
 
-### Phase 3 — WriteWise Platform (Feb 2026)
+## Deployment Status
+- All checks PASS (deployment agent verified Apr 2026)
+- No hardcoded secrets, no wrong ports, CORS configured
+- Environment variables properly set
+- Frontend and backend both compile clean
 
-#### New Modes (Backend + Frontend)
-- **Paraphrase** with 5 styles: Standard, Fluency, Formal, Simple, Creative
-- **Summarize** with 2 formats: Short Summary (2-3 sentences), Bullet Points (4-6 bullets)
-- **Expand**: adds detail, depth, and context
-- **Shorten**: trims to core message only
-- **Humanize**: removes AI-like phrasing, makes text conversational
+## Backlog
 
-#### Backend Updates
-- VALID_MODES expanded to 10: auto, grammar, email, tone, rewrite, paraphrase, summarize, expand, shorten, humanize
-- GenerateRequest: new fields paraphrase_mode, summary_type
-- SYSTEM_MESSAGE: enforces no em dashes, no double hyphens, natural human tone
-- build_mode_task(): modular per-mode prompt construction
-- Anti-em-dash rule in every prompt
-
-#### Frontend Updates
-- 9 tabs (scrollable): Auto, Grammar, Email, Tone, Rewrite, Paraphrase, Summarize, Expand/Shorten, Humanize
-- TabOptions component: renders mode-specific pill sub-options
-- Dynamic button labels: Expand/Shorten shows "Expand" or "Shorten"
-- Dynamic loading messages per mode: "Paraphrasing...", "Summarizing...", "Humanizing...", etc.
-- Visibility rules:
-  - Variations toggle: only for auto, email, rewrite, tone, paraphrase
-  - Personalization panel: only for auto, email, rewrite, tone, humanize
-- Context placeholder changes per mode
-- QuickTemplates: fixed em dashes in template text
-
-## Backlog / Next Tasks
-
-### P0 (Done)
-- [x] All 9 writing modes fully functional
-- [x] Dynamic tab sub-options (style/format/action pills)
-- [x] Anti-em-dash output enforcement
-- [x] Human-like output tone
-- [x] Dynamic loading messages
-
-### P1 (Next)
-- [ ] Generation history (store and display past results)
-- [ ] Word/character count on textarea
+### P1 — Next priorities
+- [ ] Generation history (store and display past results per session)
+- [ ] Word / character count on textarea
 - [ ] Download output as .txt
 
-### P2 (Nice to have)
-- [ ] LinkedIn message template
+### P2 — Nice to have
+- [ ] LinkedIn message quick template
 - [ ] Thank-you note template
-- [ ] Share output via link
 - [ ] Export as .docx
+- [ ] Share output via link
