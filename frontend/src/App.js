@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import "@/App.css";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { Wand2, Loader2, ArrowDown, Sparkles } from "lucide-react";
+import { Wand2, Loader2, ArrowDown, Sparkles, X } from "lucide-react";
 import axios from "axios";
 import QuickTemplates from "@/components/QuickTemplates";
 import PersonalizationPanel from "@/components/PersonalizationPanel";
@@ -48,7 +48,7 @@ const CONTEXT_PLACEHOLDERS = {
   auto:           "e.g. Make it more confident, applying for a startup role...",
   grammar:        "e.g. Keep British English spelling...",
   email:          "e.g. Friendly and direct, startup culture...",
-  tone:           "e.g. friendly, confident, formal, polite...",
+  tone:           "e.g. Keep it concise and suitable for a client-facing email...",
   rewrite:        "e.g. Make it punchier, cut anything vague...",
   paraphrase:     "e.g. Keep it under 100 words, avoid jargon...",
   summarize:      "e.g. Focus on the key statistics, skip the examples...",
@@ -65,6 +65,14 @@ const LOADING_MSGS = {
   paraphrase:     "Paraphrasing...",
   summarize:      "Summarizing...",
   humanize:       "Humanizing...",
+};
+
+const DEFAULT_OPTIONS = {
+  paraphraseMode: "standard",
+  summaryType: "short",
+  expandShortenMode: "shorten",
+  tone: "professional",
+  rewriteGoal: null,
 };
 
 const SHOW_VARIATIONS = ["auto", "email", "rewrite", "tone", "paraphrase"];
@@ -106,21 +114,73 @@ export default function App() {
   const [result, setResult] = useState(null);
 
   // Tab sub-options
-  const [paraphraseMode, setParaphraseMode] = useState("standard");
-  const [summaryType, setSummaryType] = useState("short");
-  const [expandShortenMode, setExpandShortenMode] = useState("shorten");
+  const [paraphraseMode, setParaphraseMode] = useState(DEFAULT_OPTIONS.paraphraseMode);
+  const [summaryType, setSummaryType] = useState(DEFAULT_OPTIONS.summaryType);
+  const [expandShortenMode, setExpandShortenMode] = useState(DEFAULT_OPTIONS.expandShortenMode);
+  const [tone, setTone] = useState(DEFAULT_OPTIONS.tone);
+  const [rewriteGoal, setRewriteGoal] = useState(DEFAULT_OPTIONS.rewriteGoal);
+
+  // Incremented whenever the current result is discarded, so a response
+  // from an older request can't appear under a different feature.
+  const requestIdRef = useRef(0);
 
   const currentMode = MODES.find((m) => m.id === mode);
 
+  const discardResult = () => {
+    requestIdRef.current += 1;
+    setLoading(false);
+    setResult(null);
+  };
+
+  const resetOptions = () => {
+    setParaphraseMode(DEFAULT_OPTIONS.paraphraseMode);
+    setSummaryType(DEFAULT_OPTIONS.summaryType);
+    setExpandShortenMode(DEFAULT_OPTIONS.expandShortenMode);
+    setTone(DEFAULT_OPTIONS.tone);
+    setRewriteGoal(DEFAULT_OPTIONS.rewriteGoal);
+  };
+
+  // Switching features keeps the input text but drops the previous result.
   const handleModeChange = (newMode) => {
     setMode(newMode);
-    setResult(null);
+    discardResult();
+  };
+
+  const handleClear = () => {
+    const snapshot = {
+      mode, input, context, result,
+      options: { paraphraseMode, summaryType, expandShortenMode, tone, rewriteGoal },
+    };
+    setInput("");
+    setContext("");
+    discardResult();
+    resetOptions();
+    if (snapshot.input.trim()) {
+      toast("Text cleared", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            discardResult();
+            setMode(snapshot.mode);
+            setInput(snapshot.input);
+            setContext(snapshot.context);
+            setResult(snapshot.result);
+            setParaphraseMode(snapshot.options.paraphraseMode);
+            setSummaryType(snapshot.options.summaryType);
+            setExpandShortenMode(snapshot.options.expandShortenMode);
+            setTone(snapshot.options.tone);
+            setRewriteGoal(snapshot.options.rewriteGoal);
+          },
+        },
+      });
+    }
+    document.getElementById("main-input")?.focus();
   };
 
   const handleTemplateSelect = (template) => {
     setInput(template.text);
     setMode(template.mode);
-    setResult(null);
+    discardResult();
     setTimeout(() => window.scrollTo({ top: 300, behavior: "smooth" }), 50);
   };
 
@@ -136,20 +196,24 @@ export default function App() {
       variations: SHOW_VARIATIONS.includes(mode) ? variationsEnabled : false,
       paraphrase_mode: mode === "paraphrase" ? paraphraseMode : null,
       summary_type: mode === "summarize" ? summaryType : null,
+      tone: mode === "tone" ? tone : null,
+      rewrite_goal: mode === "rewrite" ? rewriteGoal : null,
     };
   };
 
   const runGenerate = async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setResult(null);
     try {
       const { data } = await axios.post(`${API}/generate`, buildPayload());
-      setResult(data);
+      if (requestId === requestIdRef.current) setResult(data);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       const msg = err?.response?.data?.detail || "Something went wrong. Please try again.";
       toast.error(msg);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   };
 
@@ -169,7 +233,7 @@ export default function App() {
   const handleTryExample = () => {
     setInput(EXAMPLE_TEXT);
     setMode("email");
-    setResult(null);
+    discardResult();
     setTimeout(() => {
       document.getElementById("main-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 80);
@@ -255,12 +319,29 @@ export default function App() {
           onSummaryType={setSummaryType}
           expandShortenMode={expandShortenMode}
           onExpandShortenMode={setExpandShortenMode}
+          tone={tone}
+          onTone={setTone}
+          rewriteGoal={rewriteGoal}
+          onRewriteGoal={setRewriteGoal}
           disabled={loading}
         />
 
         {/* Input Section */}
         <section className="input-section">
-          <div className="input-label">Your text</div>
+          <div className="input-label-row">
+            <div className="input-label">Your text</div>
+            <button
+              type="button"
+              className="input-clear-btn"
+              onClick={handleClear}
+              disabled={!input && !context && !result && !loading}
+              data-testid="clear-input-btn"
+              title="Clear the text and start over"
+            >
+              <X size={11} strokeWidth={1.5} />
+              Clear
+            </button>
+          </div>
           <Textarea
             id="main-input"
             data-testid="main-input"

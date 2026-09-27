@@ -425,6 +425,37 @@
   margin-bottom: 0.4rem;
 }
 
+.input-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.input-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #52525B;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.input-clear-btn:hover:not(:disabled) {
+  color: #D4D4D8;
+}
+
+.input-clear-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ===== INPUT SECTION ===== */
 .input-section {
   display: flex;

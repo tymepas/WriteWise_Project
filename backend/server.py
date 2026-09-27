@@ -53,6 +53,33 @@ PARAPHRASE_STYLES = {
     "creative": "fresh and inventive phrasing, different angle on the same idea",
 }
 
+TONES = {
+    "professional": ("professional", "clear, respectful and businesslike, suitable for work"),
+    "casual":       ("casual", "relaxed and conversational, like talking to a colleague you know well; contractions are fine"),
+    "friendly":     ("friendly", "warm, positive and approachable"),
+    "diplomatic":   ("diplomatic", "tactful and courteous. Turn demands, blame and confrontational or accusatory "
+                                   "phrasing into respectful, cooperative requests, while keeping the same request "
+                                   "and any real urgency"),
+    "formal":       ("formal", "formal register with precise wording, no contractions or slang"),
+    "confident":    ("confident", "assured and decisive, with no hedging or apologetic language"),
+    "persuasive":   ("persuasive", "makes a compelling case with clear reasons and a clear ask, without inventing facts"),
+    "empathetic":   ("empathetic", "acknowledges the reader's situation and feelings with genuine care"),
+}
+
+REWRITE_GOALS = {
+    "clear_concise":   "Make it clear and concise. Tighten the structure, cut anything that does not earn its place, "
+                       "and prefer shorter over longer wherever meaning allows.",
+    "more_direct":     "Make it more direct. Lead with the main point, use active voice, and remove hedging, filler "
+                       "and qualifiers that weaken the message.",
+    "more_polished":   "Make it more polished. Improve word choice, flow and transitions so it reads as carefully "
+                       "written, without making it longer than it needs to be.",
+    "more_persuasive": "Make it more persuasive. Strengthen the main argument or request, make the reason or benefit "
+                       "clear, and end with a clear point or ask. Do not invent facts, numbers or claims.",
+    "simplify":        "Simplify it. Use plain everyday words and shorter sentences. Keep every key point.",
+    "keep_style":      "Keep the writer's own style and voice. Fix awkward phrasing, repetition and unclear structure, "
+                       "but keep their word choices, rhythm and level of formality wherever they already work.",
+}
+
 
 class GenerateRequest(BaseModel):
     mode: str
@@ -64,6 +91,8 @@ class GenerateRequest(BaseModel):
     variations: bool = False
     paraphrase_mode: Optional[str] = None
     summary_type: Optional[str] = None
+    tone: Optional[str] = None
+    rewrite_goal: Optional[str] = None
 
 
 class EvaluationScore(BaseModel):
@@ -141,6 +170,20 @@ def build_mode_task(req: GenerateRequest) -> str:
         )
 
     elif mode == "tone":
+        tone = TONES.get((req.tone or "").strip().lower())
+        if tone:
+            label, desc = tone
+            return (
+                f"Rewrite in a {label} tone: {desc}. "
+                f"The selected {label} tone takes priority over the tone of the original text. "
+                f"Change wording, phrasing and sentence structure as much as needed so the result clearly sounds {label}. "
+                "Keep the same meaning, facts and requests. "
+                "Do not add ideas or remove any. "
+                "Make it sound like someone who naturally speaks that way wrote it, "
+                "not like a tone example from a writing guide. "
+                "Output only the rewritten text."
+            )
+        # Older clients sent the tone in the context field.
         target = ctx if ctx else "professional"
         return (
             f"Rewrite in a {target} tone. "
@@ -152,6 +195,16 @@ def build_mode_task(req: GenerateRequest) -> str:
         )
 
     elif mode == "rewrite":
+        goal = REWRITE_GOALS.get((req.rewrite_goal or "").strip().lower())
+        if goal:
+            return (
+                "Rewrite to improve how this is structured and expressed. "
+                f"Goal: {goal} "
+                "Keep the meaning and the overall tone of the original; this is not a tone change. "
+                "Keep the voice natural and the result easy to read. "
+                "Do not add ideas that were not in the original. "
+                "Output only the rewritten text."
+            )
         return (
             "Rewrite for clarity and impact. "
             "Tighten the structure. Cut anything that does not earn its place. "

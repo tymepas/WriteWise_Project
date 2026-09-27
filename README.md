@@ -21,8 +21,8 @@ Fix grammar, rewrite content, generate emails, paraphrase text, summarize docume
 | **Auto** | AI detects your intent and acts on it automatically |
 | **Grammar** | Fixes grammar and spelling without changing your voice |
 | **Email** | Drafts professional emails and personalized job application emails |
-| **Tone** | Rewrites text in a specified tone (formal, friendly, confident, polite) |
-| **Rewrite** | Improves clarity, flow, and impact |
+| **Tone** | Changes how the text sounds: Professional, Casual, Friendly, Diplomatic, Formal, Confident, Persuasive, or Empathetic |
+| **Rewrite** | Improves how the text is structured and expressed, with an optional goal: Clear & Concise, More Direct, More Polished, More Persuasive, Simplify, or Keep My Style |
 | **Paraphrase** | Rewrites with the same meaning in 5 styles: Standard, Fluency, Formal, Simple, Creative |
 | **Summarize** | Extracts key points as a short summary or bullet points |
 | **Expand / Shorten** | Adds depth or trims text down to what matters |
@@ -217,13 +217,15 @@ Generate writing output based on the selected mode.
 |-------|------|----------|-------------|
 | `mode` | string | Yes | One of: `auto`, `grammar`, `email`, `tone`, `rewrite`, `paraphrase`, `summarize`, `expand`, `shorten`, `humanize` |
 | `input` | string | Yes | The text to process |
-| `context` | string | No | Extra instructions or tone guidance |
+| `context` | string | No | Extra instructions (e.g. "Keep it concise for a client email") |
 | `experience` | string | No | User's work experience (for personalization) |
 | `target_role` | string | No | Job role being targeted |
 | `skills` | string | No | Comma-separated skills |
 | `variations` | boolean | No | If true, returns 3 variations instead of 1 |
 | `paraphrase_mode` | string | No | `standard`, `fluency`, `formal`, `simple`, `creative` |
 | `summary_type` | string | No | `short` or `bullets` |
+| `tone` | string | No | Tone mode only: `professional`, `casual`, `friendly`, `diplomatic`, `formal`, `confident`, `persuasive`, `empathetic`. If omitted, the tone is taken from `context` (default `professional`) |
+| `rewrite_goal` | string | No | Rewrite mode only: `clear_concise`, `more_direct`, `more_polished`, `more_persuasive`, `simplify`, `keep_style`. If omitted, the default rewrite is used |
 
 **Response:**
 
