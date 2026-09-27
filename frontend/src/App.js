@@ -179,7 +179,11 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <div className="bg-texture" aria-hidden="true" />
+      <div
+        className="bg-texture"
+        aria-hidden="true"
+        style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/images/bg-texture.png)` }}
+      />
 
       <main className="container">
         {/* Header */}

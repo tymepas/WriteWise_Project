@@ -1,6 +1,12 @@
 # WriteWise
 
-**WriteWise** is an AI-powered writing platform built for job seekers and professionals. It combines general writing tools (like QuillBot) with job-focused intelligence, powered by Claude Sonnet 4.5.
+**WriteWise** is an AI-powered writing platform built for job seekers and professionals. It combines general writing tools (like QuillBot) with job-focused intelligence, powered by the OpenAI API.
+
+WriteWise is a standalone, self-hosted app: a React frontend talks to a Python FastAPI backend, and the backend calls OpenAI. There is no login and no database.
+
+```
+Browser → React frontend (localhost:3000) → FastAPI backend (localhost:8001) → OpenAI API
+```
 
 Fix grammar, rewrite content, generate emails, paraphrase text, summarize documents, and more — all in one place.
 
@@ -46,10 +52,10 @@ Fix grammar, rewrite content, generate emails, paraphrase text, summarize docume
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 19, Tailwind CSS, Shadcn UI, Lucide React |
+| Frontend | React 18, Create React App 5 + CRACO, Tailwind CSS, Shadcn UI, Lucide React |
 | Backend | FastAPI, Python |
-| Database | MongoDB (Motor async driver) |
-| AI | Claude Sonnet 4.5 via `emergentintegrations` |
+| AI | OpenAI Responses API via the official `openai` Python SDK (model set by `OPENAI_MODEL`, default `gpt-5.6-terra`) |
+| Storage | None. Requests are stateless and nothing is persisted |
 | Fonts | IBM Plex Sans, JetBrains Mono |
 
 ---
@@ -59,9 +65,10 @@ Fix grammar, rewrite content, generate emails, paraphrase text, summarize docume
 ```
 writewise/
 ├── backend/
-│   ├── server.py          # FastAPI app, all 10 writing modes, prompt construction
+│   ├── server.py          # FastAPI app, all 10 writing modes, prompt construction, OpenAI call
 │   ├── requirements.txt
-│   └── .env               # MONGO_URL, DB_NAME, EMERGENT_LLM_KEY
+│   ├── .env.example       # Template for backend/.env
+│   └── .env               # OPENAI_API_KEY, OPENAI_MODEL, CORS_ORIGINS (not committed)
 │
 ├── frontend/
 │   ├── src/
@@ -73,8 +80,11 @@ writewise/
 │   │       ├── TabOptions.jsx            # Mode-specific sub-options (pills)
 │   │       └── OutputSection.jsx         # Output cards, scores, why-good-fit
 │   ├── public/
+│   │   └── images/bg-texture.png         # Background texture
 │   ├── package.json
-│   └── .env               # REACT_APP_BACKEND_URL
+│   ├── package-lock.json
+│   ├── .env.example       # Template for frontend/.env
+│   └── .env               # REACT_APP_BACKEND_URL (not committed)
 │
 └── README.md
 ```
@@ -85,60 +95,75 @@ writewise/
 
 ### Prerequisites
 
-- Node.js 18+
-- Python 3.11+
-- MongoDB (local or Atlas)
-- Emergent Universal LLM Key (for Claude Sonnet 4.5)
+- Node.js 20.x (tested with 20.19.4) and npm 10.x (tested with 10.8.2)
+- Python 3.10+ (tested with 3.12)
+- An OpenAI API key
+
+No database is required.
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/writewise.git
-cd writewise
+git clone https://github.com/tymepas/WriteWise_Project.git
+cd WriteWise_Project
 ```
 
 ### 2. Backend setup
 
 ```bash
 cd backend
+python -m venv .venv
+# Windows:      .venv\Scripts\activate
+# macOS/Linux:  source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in `/backend`:
+Copy `backend/.env.example` to `backend/.env` and fill in your key:
 
 ```env
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=writewise
-EMERGENT_LLM_KEY=your_emergent_llm_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-5.6-terra
 CORS_ORIGINS=http://localhost:3000
 ```
 
-Start the backend:
+Start the backend (from the `backend` directory):
 
 ```bash
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+uvicorn server:app --host 127.0.0.1 --port 8001 --reload
 ```
+
+Check it is running: `http://localhost:8001/api/` should return `{"message": "WriteWise API"}`.
 
 ### 3. Frontend setup
 
+In a second terminal:
+
 ```bash
 cd frontend
-yarn install
+npm install
 ```
 
-Create a `.env` file in `/frontend`:
+Copy `frontend/.env.example` to `frontend/.env`:
 
 ```env
 REACT_APP_BACKEND_URL=http://localhost:8001
 ```
 
-Start the frontend:
+Start the development server:
 
 ```bash
-yarn start
+npm start
 ```
 
 The app will be available at `http://localhost:3000`.
+
+To create a production build in `frontend/build/`:
+
+```bash
+npm run build
+```
+
+Note that `REACT_APP_BACKEND_URL` is baked into the bundle at build time, so set it to your deployed backend URL before building for production.
 
 ---
 
@@ -209,16 +234,23 @@ Health check. Returns `{ "message": "WriteWise API" }`.
 
 | Variable | Description |
 |----------|-------------|
-| `MONGO_URL` | MongoDB connection string |
-| `DB_NAME` | MongoDB database name |
-| `EMERGENT_LLM_KEY` | Emergent Universal LLM Key for Claude Sonnet 4.5 |
-| `CORS_ORIGINS` | Allowed origins (comma-separated) |
+| `OPENAI_API_KEY` | Your OpenAI API key. Required. Used only by the backend and never sent to the browser |
+| `OPENAI_MODEL` | OpenAI model to use. Optional, defaults to `gpt-5.6-terra` |
+| `CORS_ORIGINS` | Allowed frontend origins (comma-separated), e.g. `http://localhost:3000` |
 
 ### Frontend (`/frontend/.env`)
 
 | Variable | Description |
 |----------|-------------|
-| `REACT_APP_BACKEND_URL` | Backend API base URL |
+| `REACT_APP_BACKEND_URL` | Backend API base URL, e.g. `http://localhost:8001`. Do not put any API keys in the frontend `.env`: everything in it is visible in the browser |
+
+`.env` files are git-ignored; only the `.env.example` templates are committed.
+
+---
+
+## Provider Migration Note
+
+WriteWise was originally generated on the Emergent platform, where the backend called Anthropic's `claude-sonnet-4-5-20250929` through Emergent's `emergentintegrations` wrapper and logged request metadata to MongoDB. The standalone version calls OpenAI directly with the official SDK, keeps the same prompts, request/response shape and output parsing, and stores nothing. The backend asks OpenAI for JSON-mode output so the model's response always parses into the structure the frontend expects. Output wording may differ from the original model.
 
 ---
 

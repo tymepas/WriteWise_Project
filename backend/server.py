@@ -1,23 +1,22 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-import uuid
 import json
 import re
 from pathlib import Path
 from pydantic import BaseModel
 from typing import Optional, List
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from openai import AsyncOpenAI, AuthenticationError
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL") or "gpt-5.6-terra"
+
+# Created on first use so the server can start (and report a clear error) without a key.
+openai_client: Optional[AsyncOpenAI] = None
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -273,7 +272,7 @@ def build_prompt(req: GenerateRequest) -> str:
     )
 
 
-def parse_claude_response(raw: str) -> dict:
+def parse_model_response(raw: str) -> dict:
     cleaned = re.sub(r'```(?:json)?\s*', '', raw)
     cleaned = re.sub(r'```', '', cleaned).strip()
     match = re.search(r'\{.*\}', cleaned, re.DOTALL)
@@ -294,24 +293,27 @@ async def generate_text(req: GenerateRequest):
     if not req.input or not req.input.strip():
         raise HTTPException(status_code=400, detail="Input text cannot be empty.")
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    global openai_client
+    api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="LLM API key not configured.")
+    if openai_client is None:
+        openai_client = AsyncOpenAI(api_key=api_key)
 
-    session_id = str(uuid.uuid4())
     prompt = build_prompt(req)
 
     try:
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=session_id,
-            system_message=SYSTEM_MESSAGE,
-        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
-
-        raw_response = await chat.send_message(UserMessage(text=prompt))
+        response = await openai_client.responses.create(
+            model=OPENAI_MODEL,
+            instructions=SYSTEM_MESSAGE,
+            input=prompt,
+            # The prompts already demand raw JSON; JSON mode guarantees it is well-formed.
+            text={"format": {"type": "json_object"}},
+        )
+        raw_response = response.output_text
 
         try:
-            data = parse_claude_response(raw_response)
+            data = parse_model_response(raw_response)
         except (json.JSONDecodeError, AttributeError) as e:
             logger.warning(f"JSON parse failed: {e}. Using raw as output.")
             data = {"output": raw_response, "evaluation": None, "why_good_fit": None, "detected_mode": None}
@@ -341,13 +343,6 @@ async def generate_text(req: GenerateRequest):
         if why_good_fit and not isinstance(why_good_fit, list):
             why_good_fit = None
 
-        await db.generations.insert_one({
-            "mode": req.mode,
-            "detected_mode": data.get("detected_mode"),
-            "variations": req.variations,
-            "session_id": session_id,
-        })
-
         return GenerateResponse(
             output=data.get("output") if not req.variations else None,
             variations=variations,
@@ -359,6 +354,9 @@ async def generate_text(req: GenerateRequest):
 
     except HTTPException:
         raise
+    except AuthenticationError:
+        logger.error("Generation error: OpenAI rejected the API key.")
+        raise HTTPException(status_code=500, detail="LLM API key is invalid.")
     except Exception as e:
         logger.error(f"Generation error: {e}")
         raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
@@ -376,5 +374,6 @@ app.add_middleware(
 
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+async def shutdown_openai_client():
+    if openai_client is not None:
+        await openai_client.close()

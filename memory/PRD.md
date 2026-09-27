@@ -1,13 +1,14 @@
 # WriteWise — AI Writing Platform PRD
 
 ## Problem Statement
-WriteWise is an AI-powered writing platform for professionals and job seekers. It combines general writing tools (grammar, paraphrase, summarize, humanize) with job-focused intelligence (email generation, tone rewriting) powered by Claude Sonnet 4.5.
+WriteWise is an AI-powered writing platform for professionals and job seekers. It combines general writing tools (grammar, paraphrase, summarize, humanize) with job-focused intelligence (email generation, tone rewriting) powered by the OpenAI API.
 
 ## Architecture
-- **Frontend**: React 19, Tailwind CSS, Shadcn UI, Lucide React
-- **Backend**: FastAPI, Python, Motor (async MongoDB)
-- **AI**: Claude Sonnet 4.5 via `emergentintegrations` (Emergent Universal LLM Key)
-- **Database**: MongoDB (session metadata only)
+- **Frontend**: React 18, CRA 5 + CRACO, Tailwind CSS, Shadcn UI, Lucide React
+- **Backend**: FastAPI, Python (stateless)
+- **AI**: OpenAI Responses API via the official `openai` SDK (`OPENAI_API_KEY`, `OPENAI_MODEL`, default `gpt-5.6-terra`)
+- **Database**: None (the Emergent version logged per-request metadata to MongoDB; removed Sep 2026)
+- **Hosting**: Standalone and self-hosted; no Emergent dependencies (migrated Sep 2026)
 
 ## Writing Modes (FROZEN — do not modify prompts)
 
@@ -43,10 +44,9 @@ WriteWise is an AI-powered writing platform for professionals and job seekers. I
 - Dynamic loading messages per mode
 
 ## Deployment Status
-- All checks PASS (deployment agent verified Apr 2026)
-- No hardcoded secrets, no wrong ports, CORS configured
-- Environment variables properly set
-- Frontend and backend both compile clean
+- Sep 2026: migrated off Emergent to a standalone React + FastAPI + OpenAI stack
+- Verified locally on Node 20.19.4 / npm 10.8.2 and Python 3.12
+- Secrets live only in backend/.env (git-ignored)
 
 ## Backlog
 

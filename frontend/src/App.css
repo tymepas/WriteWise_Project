@@ -14,7 +14,7 @@
 .bg-texture {
   position: fixed;
   inset: 0;
-  background-image: url('https://static.prod-images.emergentagent.com/jobs/2dae909f-c163-40be-a4eb-7a517ea94eab/images/f1b77d4946055e61ecca864e29a5653714ad04db0e75679555e53941f72b9006.png');
+  /* background-image is set in App.js from public/images/bg-texture.png */
   background-size: cover;
   background-position: center;
   opacity: 0.07;

@@ -63,7 +63,7 @@
     "images": [
       {
         "category": "background",
-        "url": "https://static.prod-images.emergentagent.com/jobs/2dae909f-c163-40be-a4eb-7a517ea94eab/images/f1b77d4946055e61ecca864e29a5653714ad04db0e75679555e53941f72b9006.png",
+        "url": "frontend/public/images/bg-texture.png",
         "description": "Dark ambient texture. Use as a fixed background (e.g., fixed inset-0 object-cover opacity-20 pointer-events-none -z-10) to add subtle grain and depth to the dark theme."
       }
     ]
@@ -86,6 +86,6 @@
     "Ensure the background image is applied globally with low opacity to give texture to the pure dark theme.",
     "Import and apply Cabinet Grotesk for headings, IBM Plex Sans for body text, and JetBrains Mono for small labels or code snippets.",
     "Make sure all components implement the 'data-testid' attribute as specified for testing.",
-    "Integrate the frontend with the FastAPI backend endpoint for Claude Sonnet 4.5 text generation."
+    "Integrate the frontend with the FastAPI backend endpoint for OpenAI text generation."
   ]
 }
