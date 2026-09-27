@@ -64,9 +64,12 @@ Fix grammar, rewrite content, generate emails, paraphrase text, summarize docume
 
 ```
 writewise/
+├── api/
+│   ├── index.py           # Vercel entrypoint; re-exports the FastAPI app from backend/server.py
+│   └── requirements.txt   # Runtime Python dependencies (used by Vercel and by backend/requirements.txt)
 ├── backend/
 │   ├── server.py          # FastAPI app, all 10 writing modes, prompt construction, OpenAI call
-│   ├── requirements.txt
+│   ├── requirements.txt   # Runtime deps (via api/requirements.txt) + uvicorn and test tools
 │   ├── .env.example       # Template for backend/.env
 │   └── .env               # OPENAI_API_KEY, OPENAI_MODEL, CORS_ORIGINS (not committed)
 │
@@ -163,7 +166,28 @@ To create a production build in `frontend/build/`:
 npm run build
 ```
 
-Note that `REACT_APP_BACKEND_URL` is baked into the bundle at build time, so set it to your deployed backend URL before building for production.
+`REACT_APP_BACKEND_URL` is baked into the bundle at build time. When it is not set, the frontend calls the API on its own origin (`/api/...`), which is how the Vercel deployment works.
+
+---
+
+## Deploying to Vercel
+
+WriteWise deploys as a single Vercel project: the React build is served as static files and the FastAPI app runs as a Python function on the same domain.
+
+```
+/          → frontend/build (static React app)
+/api/*     → api/index.py → FastAPI app from backend/server.py
+```
+
+1. Import the GitHub repository into Vercel and keep the **Root Directory** as the repository root. `vercel.json` sets the install command, build command, output directory and the `/api/*` rewrite, so no build settings need to be changed in the dashboard.
+2. Add these **Environment Variables** in the Vercel project settings:
+   - `OPENAI_API_KEY`: your OpenAI key (mark it as sensitive)
+   - `OPENAI_MODEL`: `gpt-5.6-terra`
+   - `CORS_ORIGINS`: your deployment URL, e.g. `https://writewise.vercel.app` (the app itself is same-origin and does not need CORS; this only limits other websites)
+3. Do **not** set `REACT_APP_BACKEND_URL` on Vercel, so the frontend calls `/api` on the same domain.
+4. Deploy.
+
+The Python runtime version is pinned by `api/.python-version` (3.12), and the Python function installs only `api/requirements.txt`.
 
 ---
 

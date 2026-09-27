@@ -16,7 +16,8 @@ import TabOptions from "@/components/TabOptions";
 import WritewiseLogo from "@/components/WritewiseLogo";
 import LoadingCard from "@/components/LoadingCard";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// Empty in production so requests go to the same origin (/api on Vercel).
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 const API = `${BACKEND_URL}/api`;
 
 const MODES = [
