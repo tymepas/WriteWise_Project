@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import "@/App.css";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { Wand2, Loader2, ArrowDown, Sparkles, X } from "lucide-react";
+import { Loader2, Sparkles, ArrowRight, X } from "lucide-react";
 import axios from "axios";
 import QuickTemplates from "@/components/QuickTemplates";
 import PersonalizationPanel from "@/components/PersonalizationPanel";
@@ -15,6 +14,9 @@ import OutputSection from "@/components/OutputSection";
 import TabOptions from "@/components/TabOptions";
 import WritewiseLogo from "@/components/WritewiseLogo";
 import LoadingCard from "@/components/LoadingCard";
+import ModeNav from "@/components/ModeNav";
+import HumanizeSpotlight, { HUMANIZE_EXAMPLE } from "@/components/HumanizeSpotlight";
+import CharCount, { LIMITS, warnIfPasteTooLong } from "@/components/CharCount";
 
 // Empty in production so requests go to the same origin (/api on Vercel).
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
@@ -127,6 +129,19 @@ function getButtonLabel(mode, expandShortenMode) {
   return "Generate";
 }
 
+// Matches the CSS breakpoint where the two panes stack.
+const STACKED_LAYOUT_QUERY = "(max-width: 959px)";
+
+const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+function scrollIntoViewIfNeeded(el, block = "start") {
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  if (rect.top < 0 || rect.top > window.innerHeight * 0.75) {
+    el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block });
+  }
+}
+
 export default function App() {
   const [mode, setMode] = useState("auto");
   const [input, setInput] = useState("");
@@ -152,6 +167,19 @@ export default function App() {
   // Incremented whenever the current result is discarded, so a response
   // from an older request can't appear under a different feature.
   const requestIdRef = useRef(0);
+
+  const panelRef = useRef(null);
+  // Brief visual confirmation on the Generate button when a real result arrives.
+  const [justCompleted, setJustCompleted] = useState(false);
+
+  useEffect(() => {
+    if (!result) return undefined;
+    setJustCompleted(true);
+    // Bring the result into view if the panel is off screen (e.g. stacked layout).
+    scrollIntoViewIfNeeded(panelRef.current);
+    const timer = setTimeout(() => setJustCompleted(false), 900);
+    return () => clearTimeout(timer);
+  }, [result]);
 
   const currentMode = MODES.find((m) => m.id === mode);
 
@@ -206,11 +234,25 @@ export default function App() {
     document.getElementById("main-input")?.focus();
   };
 
+  const showEditor = () => {
+    setTimeout(() => scrollIntoViewIfNeeded(document.getElementById("main-input"), "center"), 50);
+  };
+
   const handleTemplateSelect = (template) => {
     setInput(template.text);
     setMode(template.mode);
     discardResult();
-    setTimeout(() => window.scrollTo({ top: 300, behavior: "smooth" }), 50);
+    showEditor();
+  };
+
+  // The spotlight only switches to the existing Humanize mode. It fills the
+  // labelled example text only when the editor is empty, never over user text.
+  const handleTryHumanize = () => {
+    setMode("humanize");
+    discardResult();
+    if (!input.trim()) setInput(HUMANIZE_EXAMPLE.before);
+    showEditor();
+    document.getElementById("main-input")?.focus({ preventScroll: true });
   };
 
   const buildPayload = () => {
@@ -259,25 +301,23 @@ export default function App() {
       toast.error("Please enter some text first.");
       return;
     }
+    // When the panes are stacked, move to the panel so the loading state is visible.
+    if (window.matchMedia?.(STACKED_LAYOUT_QUERY).matches) {
+      setTimeout(() => scrollIntoViewIfNeeded(panelRef.current), 50);
+    }
     await runGenerate();
-  };
-
-  const handleStartWriting = () => {
-    document.getElementById("main-input")?.focus();
-    document.getElementById("main-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const handleTryExample = () => {
     setInput(EXAMPLE_TEXT);
     setMode("email");
     discardResult();
-    setTimeout(() => {
-      document.getElementById("main-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 80);
+    showEditor();
   };
 
   const btnLabel = getButtonLabel(mode, expandShortenMode);
   const loadingMsg = getLoadingMsg(mode, expandShortenMode);
+  const panelState = loading ? "loading" : result ? "result" : "empty";
 
   return (
     <div className="app-root">
@@ -286,185 +326,192 @@ export default function App() {
         aria-hidden="true"
         style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/images/bg-texture.png)` }}
       />
+      <div className="bg-atmosphere" aria-hidden="true">
+        <span className="bg-grid" />
+        <span className="bg-glow bg-glow-a" />
+        <span className="bg-glow bg-glow-b" />
+      </div>
 
-      <main className="container">
-        {/* Header */}
-        <header className="header">
-          <div className="header-logo-row">
-            <WritewiseLogo iconSize={26} />
-          </div>
-
-          <h1 className="heading-1">
-            Write better.<br />Get noticed.
-          </h1>
-
-          <p className="subheading">
-            From fixing grammar to crafting job-winning emails, everything you need to write with confidence.
-          </p>
-
-          <div className="hero-cta-row">
-            <button
-              className="hero-cta-primary"
-              onClick={handleStartWriting}
-              data-testid="cta-start-writing"
-            >
-              <Sparkles size={14} strokeWidth={1.5} />
-              Start Writing Smarter
-            </button>
-            <button
-              className="hero-cta-secondary"
-              onClick={handleTryExample}
-              data-testid="cta-try-example"
-            >
-              Try with Example
-              <ArrowDown size={13} strokeWidth={1.5} />
-            </button>
-          </div>
-
-          <p className="hero-helper-text">
-            Paste your text or job post to begin
-          </p>
+      <div className="shell">
+        <header className="site-header">
+          <WritewiseLogo iconSize={24} />
+          <span className={`ai-status${loading ? " is-working" : ""}`} data-testid="ai-status">
+            <span className="ai-status-dot" aria-hidden="true" />
+            {loading ? "WriteWise is working..." : "Ready to write"}
+          </span>
         </header>
 
-        {/* Quick Templates */}
-        <QuickTemplates onSelect={handleTemplateSelect} />
+        {/* state-* lets the desktop layout give a result more room */}
+        <main className={`workspace state-${panelState}`} aria-labelledby="page-title">
+          {/* Spans both panes so all nine modes fit on one row on desktop */}
+          <div className="workspace-top">
+            <div className="hero">
+              <h1 className="heading-1" id="page-title">
+                Write better. <span className="heading-accent">Get noticed.</span>
+              </h1>
+              <p className="subheading">
+                Paste your text, draft, email, or job post, and let WriteWise help you make it better.{" "}
+                <button type="button" className="inline-action" onClick={handleTryExample} data-testid="cta-try-example">
+                  Try an example
+                </button>
+              </p>
+            </div>
 
-        {/* Mode Tabs */}
-        <Tabs value={mode} onValueChange={handleModeChange} className="modes-tabs">
-          <TabsList className="modes-list" data-testid="mode-tabs">
-            {MODES.map((m) => (
-              <TabsTrigger
-                key={m.id}
-                value={m.id}
-                className={`mode-trigger${m.id === "auto" ? " mode-trigger-auto" : ""}`}
-                data-testid={`mode-tab-${m.id}`}
-              >
-                {m.label}
-                {m.badge && <span className="tab-badge">{m.badge}</span>}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <p className="mode-description">{currentMode.description}</p>
-        </Tabs>
-
-        {/* Tab-specific sub-options */}
-        <TabOptions
-          mode={mode}
-          paraphraseMode={paraphraseMode}
-          onParaphraseMode={setParaphraseMode}
-          summaryType={summaryType}
-          onSummaryType={setSummaryType}
-          expandShortenMode={expandShortenMode}
-          onExpandShortenMode={setExpandShortenMode}
-          tone={tone}
-          onTone={setTone}
-          rewriteGoal={rewriteGoal}
-          onRewriteGoal={setRewriteGoal}
-          disabled={loading}
-        />
-
-        {/* Input Section */}
-        <section className="input-section">
-          <div className="input-label-row">
-            <div className="input-label">Your text</div>
-            <button
-              type="button"
-              className="input-clear-btn"
-              onClick={handleClear}
-              disabled={!input && !context && !result && !loading}
-              data-testid="clear-input-btn"
-              title="Clear the text and start over"
-            >
-              <X size={11} strokeWidth={1.5} />
-              Clear
-            </button>
-          </div>
-          <Textarea
-            id="main-input"
-            data-testid="main-input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={PLACEHOLDERS[mode]}
-            className="main-textarea"
-            disabled={loading}
-          />
-
-          {/* Personalization Panel */}
-          {SHOW_PERSONALIZATION.includes(mode) && (
-            <PersonalizationPanel
-              experience={experience}
-              targetRole={targetRole}
-              skills={skills}
-              onExperienceChange={setExperience}
-              onTargetRoleChange={setTargetRole}
-              onSkillsChange={setSkills}
-              recommended={mode === "email"}
-              disabled={loading}
-            />
-          )}
-
-          {/* Context */}
-          <div>
-            <div className="input-label">Additional context (optional)</div>
-            <Input
-              data-testid="context-input"
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              placeholder={CONTEXT_PLACEHOLDERS[mode]}
-              className="context-input"
-              disabled={loading}
+            <ModeNav
+              modes={MODES}
+              value={mode}
+              onChange={handleModeChange}
+              description={currentMode.description}
             />
           </div>
 
-          {/* Controls Row */}
-          <div className="controls-row">
-            <Button
-              data-testid="generate-btn"
-              onClick={handleGenerate}
-              disabled={loading}
-              className="generate-btn"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={15} className="spin" strokeWidth={1.5} />
-                  {loadingMsg}
-                </>
-              ) : (
-                <>
-                  <Wand2 size={15} strokeWidth={1.5} />
-                  {btnLabel}
-                </>
-              )}
-            </Button>
+          <section className="workspace-main" aria-label="Editor">
+            {/* Editor */}
+            <div className="editor-card">
+              <div className="field-label-row">
+                <label className="input-label" htmlFor="main-input">Your text</label>
+                <div className="editor-meta">
+                  <CharCount id="main-input-count" value={input} max={LIMITS.input} />
+                  <button
+                    type="button"
+                    className="input-clear-btn"
+                    onClick={handleClear}
+                    disabled={!input && !context && !result && !loading}
+                    data-testid="clear-input-btn"
+                    title="Clear the text and start over"
+                  >
+                    <X size={12} strokeWidth={1.75} aria-hidden="true" />
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <Textarea
+                id="main-input"
+                data-testid="main-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onPaste={(e) => warnIfPasteTooLong(e, LIMITS.input, "Your text")}
+                maxLength={LIMITS.input}
+                aria-describedby="main-input-count"
+                placeholder={PLACEHOLDERS[mode]}
+                className="main-textarea"
+                disabled={loading}
+              />
+            </div>
 
-            {SHOW_VARIATIONS.includes(mode) && (
-              <div className="variations-toggle" data-testid="variations-toggle-row">
-                <Switch
-                  data-testid="variations-switch"
-                  checked={variationsEnabled}
-                  onCheckedChange={setVariationsEnabled}
+            {/* Mode options and extra instructions */}
+            <div className="options-card">
+              <TabOptions
+                mode={mode}
+                paraphraseMode={paraphraseMode}
+                onParaphraseMode={setParaphraseMode}
+                summaryType={summaryType}
+                onSummaryType={setSummaryType}
+                expandShortenMode={expandShortenMode}
+                onExpandShortenMode={setExpandShortenMode}
+                tone={tone}
+                onTone={setTone}
+                rewriteGoal={rewriteGoal}
+                onRewriteGoal={setRewriteGoal}
+                disabled={loading}
+              />
+              <div className="option-field">
+                <div className="field-label-row">
+                  <label className="input-label" htmlFor="context-input">Additional context (optional)</label>
+                  <CharCount id="context-input-count" value={context} max={LIMITS.context} />
+                </div>
+                <Input
+                  id="context-input"
+                  data-testid="context-input"
+                  value={context}
+                  onChange={(e) => setContext(e.target.value)}
+                  onPaste={(e) => warnIfPasteTooLong(e, LIMITS.context, "Additional context")}
+                  maxLength={LIMITS.context}
+                  aria-describedby="context-input-count"
+                  placeholder={CONTEXT_PLACEHOLDERS[mode]}
+                  className="context-input"
                   disabled={loading}
                 />
-                <span className="toggle-label">Multiple versions</span>
+              </div>
+            </div>
+
+            {SHOW_PERSONALIZATION.includes(mode) && (
+              <PersonalizationPanel
+                experience={experience}
+                targetRole={targetRole}
+                skills={skills}
+                onExperienceChange={setExperience}
+                onTargetRoleChange={setTargetRole}
+                onSkillsChange={setSkills}
+                recommended={mode === "email"}
+                disabled={loading}
+              />
+            )}
+
+            <div className="controls-row">
+              <Button
+                data-testid="generate-btn"
+                onClick={handleGenerate}
+                disabled={loading}
+                aria-busy={loading}
+                className={`generate-btn${loading ? " is-loading" : ""}${justCompleted ? " is-complete" : ""}`}
+              >
+                <span className="generate-sheen" aria-hidden="true" />
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="spin" strokeWidth={1.75} aria-hidden="true" />
+                    {loadingMsg}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} strokeWidth={1.75} className="generate-icon" aria-hidden="true" />
+                    {btnLabel}
+                    <ArrowRight size={15} strokeWidth={1.75} className="generate-arrow" aria-hidden="true" />
+                  </>
+                )}
+              </Button>
+
+              {SHOW_VARIATIONS.includes(mode) && (
+                <div className="variations-toggle" data-testid="variations-toggle-row">
+                  <Switch
+                    id="variations-switch"
+                    data-testid="variations-switch"
+                    checked={variationsEnabled}
+                    onCheckedChange={setVariationsEnabled}
+                    disabled={loading}
+                  />
+                  <label className="toggle-label" htmlFor="variations-switch">Multiple versions</label>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Right panel: Quick start, then loading, then the result */}
+          <aside
+            ref={panelRef}
+            className={`context-panel state-${panelState}`}
+            aria-label={panelState === "result" ? "Result" : "Quick start"}
+            data-testid="context-panel"
+          >
+            {panelState === "empty" && (
+              <div className="panel-state" key="empty">
+                <QuickTemplates onSelect={handleTemplateSelect} />
+                <HumanizeSpotlight onTry={handleTryHumanize} />
               </div>
             )}
-          </div>
-        </section>
-
-        {/* Loading Card */}
-        {loading && (
-          <LoadingCard mode={mode === "expand_shorten" ? expandShortenMode : mode} />
-        )}
-
-        {/* Output */}
-        {result && !loading && (
-          <OutputSection
-            result={result}
-            onRegenerate={runGenerate}
-            loading={loading}
-          />
-        )}
-      </main>
+            {panelState === "loading" && (
+              <div className="panel-state" key="loading">
+                <LoadingCard mode={mode === "expand_shorten" ? expandShortenMode : mode} />
+              </div>
+            )}
+            {panelState === "result" && (
+              <div className="panel-state panel-result" key="result">
+                <OutputSection result={result} onRegenerate={runGenerate} loading={loading} />
+              </div>
+            )}
+          </aside>
+        </main>
+      </div>
 
       <Toaster position="bottom-right" theme="dark" />
     </div>

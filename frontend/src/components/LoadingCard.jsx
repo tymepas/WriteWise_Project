@@ -13,20 +13,29 @@ const LOADING_LABELS = {
   humanize:       "Humanizing the text...",
 };
 
+// Purely decorative words for the animation; they are not real processing steps.
+const MOTION_WORDS = ["Understanding", "Refining", "Polishing"];
+
+/** Shown only while a request is in flight, so the animation ends when the response arrives. */
 export default function LoadingCard({ mode }) {
   const label = LOADING_LABELS[mode] || "WriteWise is refining your text...";
 
   return (
-    <div className="loading-card" data-testid="loading-card">
-      <div className="loading-icon-wrap">
-        <div className="loading-glow" />
-        <WIcon size={56} className="loading-wicon" />
+    <div className="loading-card" data-testid="loading-card" role="status" aria-live="polite">
+      <div className="loading-orb" aria-hidden="true">
+        <span className="loading-ring" />
+        <span className="loading-glow" />
+        <WIcon size={46} className="loading-wicon" />
       </div>
-      <p className="loading-card-text">WriteWise is refining your text...</p>
+      <p className="loading-kicker" aria-hidden="true">✦ WriteWise AI</p>
+      <p className="loading-card-text">Working on your writing...</p>
       <p className="loading-card-mode">{label}</p>
-      <div className="loading-dots" aria-hidden="true">
-        <span /><span /><span />
+      <div className="loading-words" aria-hidden="true">
+        {MOTION_WORDS.map((word, i) => (
+          <span key={word} style={{ animationDelay: `${i * 0.6}s` }}>{word}</span>
+        ))}
       </div>
+      <div className="loading-bar" aria-hidden="true"><span /></div>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { ChevronDown } from "lucide-react";
+
 const PARAPHRASE_STYLES = [
   { id: "standard", label: "Standard" },
   { id: "fluency",  label: "Fluency" },
@@ -26,6 +28,66 @@ const REWRITE_GOALS = [
   { id: "keep_style",      label: "Keep My Style" },
 ];
 
+// Sent as rewrite_goal: null, which uses the standard rewrite.
+const STANDARD_REWRITE = "";
+
+const SUMMARY_TYPES = [
+  { id: "short",   label: "Short Summary" },
+  { id: "bullets", label: "Bullet Points" },
+];
+
+const EXPAND_SHORTEN = [
+  { id: "shorten", label: "Make it shorter" },
+  { id: "expand",  label: "Expand this" },
+];
+
+function SelectField({ id, label, value, onChange, options, disabled, testId }) {
+  return (
+    <div className="option-field">
+      <label className="input-label" htmlFor={id}>{label}</label>
+      <div className="select-wrap">
+        <select
+          id={id}
+          className="option-select"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          data-testid={testId}
+        >
+          {options.map((o) => (
+            <option key={o.id} value={o.id}>{o.label}</option>
+          ))}
+        </select>
+        <ChevronDown size={15} strokeWidth={1.75} className="select-chevron" aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
+function PillGroup({ label, options, value, onChange, disabled, testIdPrefix, testId }) {
+  return (
+    <div className="option-field" data-testid={testId}>
+      <div className="input-label" id={`${testId}-label`}>{label}</div>
+      <div className="option-pills" role="group" aria-labelledby={`${testId}-label`}>
+        {options.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            aria-pressed={value === o.id}
+            onClick={() => onChange(o.id)}
+            className={`option-pill${value === o.id ? " active" : ""}`}
+            data-testid={`${testIdPrefix}${o.id}`}
+            disabled={disabled}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Controls for the selected mode only; each one maps to a real request field. */
 export default function TabOptions({
   mode,
   paraphraseMode, onParaphraseMode,
@@ -38,126 +100,61 @@ export default function TabOptions({
   if (mode === "tone") {
     return (
       <div className="tab-options" data-testid="tab-options-tone">
-        <div className="input-label">Tone</div>
-        <div className="option-pills" role="radiogroup" aria-label="Tone">
-          {TONES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="radio"
-              aria-checked={tone === t.id}
-              onClick={() => onTone(t.id)}
-              className={`option-pill${tone === t.id ? " active" : ""}`}
-              data-testid={`tone-${t.id}`}
-              disabled={disabled}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <SelectField
+          id="tone-select"
+          label="Tone"
+          value={tone}
+          onChange={onTone}
+          options={TONES}
+          disabled={disabled}
+          testId="tone-select"
+        />
       </div>
     );
   }
 
   if (mode === "rewrite") {
-    // Optional: clicking the selected goal again clears it.
     return (
       <div className="tab-options" data-testid="tab-options-rewrite">
-        <div className="input-label">Rewrite goal (optional)</div>
-        <div className="option-pills" role="radiogroup" aria-label="Rewrite goal">
-          {REWRITE_GOALS.map((g) => (
-            <button
-              key={g.id}
-              type="button"
-              role="radio"
-              aria-checked={rewriteGoal === g.id}
-              onClick={() => onRewriteGoal(rewriteGoal === g.id ? null : g.id)}
-              className={`option-pill${rewriteGoal === g.id ? " active" : ""}`}
-              data-testid={`rewrite-goal-${g.id}`}
-              disabled={disabled}
-            >
-              {g.label}
-            </button>
-          ))}
-        </div>
+        <SelectField
+          id="rewrite-goal-select"
+          label="Rewrite goal"
+          value={rewriteGoal ?? STANDARD_REWRITE}
+          onChange={(v) => onRewriteGoal(v === STANDARD_REWRITE ? null : v)}
+          options={[{ id: STANDARD_REWRITE, label: "Standard rewrite" }, ...REWRITE_GOALS]}
+          disabled={disabled}
+          testId="rewrite-goal-select"
+        />
       </div>
     );
   }
 
   if (mode === "paraphrase") {
     return (
-      <div className="tab-options" data-testid="tab-options-paraphrase">
-        <div className="input-label">Paraphrase style</div>
-        <div className="option-pills">
-          {PARAPHRASE_STYLES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onParaphraseMode(s.id)}
-              className={`option-pill${paraphraseMode === s.id ? " active" : ""}`}
-              data-testid={`paraphrase-style-${s.id}`}
-              disabled={disabled}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+      <div className="tab-options">
+        <PillGroup label="Paraphrase style" options={PARAPHRASE_STYLES} value={paraphraseMode}
+          onChange={onParaphraseMode} disabled={disabled}
+          testIdPrefix="paraphrase-style-" testId="tab-options-paraphrase" />
       </div>
     );
   }
 
   if (mode === "summarize") {
     return (
-      <div className="tab-options" data-testid="tab-options-summarize">
-        <div className="input-label">Output format</div>
-        <div className="option-pills">
-          <button
-            type="button"
-            onClick={() => onSummaryType("short")}
-            className={`option-pill${summaryType === "short" ? " active" : ""}`}
-            data-testid="summary-type-short"
-            disabled={disabled}
-          >
-            Short Summary
-          </button>
-          <button
-            type="button"
-            onClick={() => onSummaryType("bullets")}
-            className={`option-pill${summaryType === "bullets" ? " active" : ""}`}
-            data-testid="summary-type-bullets"
-            disabled={disabled}
-          >
-            Bullet Points
-          </button>
-        </div>
+      <div className="tab-options">
+        <PillGroup label="Output format" options={SUMMARY_TYPES} value={summaryType}
+          onChange={onSummaryType} disabled={disabled}
+          testIdPrefix="summary-type-" testId="tab-options-summarize" />
       </div>
     );
   }
 
   if (mode === "expand_shorten") {
     return (
-      <div className="tab-options" data-testid="tab-options-expand-shorten">
-        <div className="input-label">Action</div>
-        <div className="option-pills">
-          <button
-            type="button"
-            onClick={() => onExpandShortenMode("shorten")}
-            className={`option-pill${expandShortenMode === "shorten" ? " active" : ""}`}
-            data-testid="action-shorten"
-            disabled={disabled}
-          >
-            Make it shorter
-          </button>
-          <button
-            type="button"
-            onClick={() => onExpandShortenMode("expand")}
-            className={`option-pill${expandShortenMode === "expand" ? " active" : ""}`}
-            data-testid="action-expand"
-            disabled={disabled}
-          >
-            Expand this
-          </button>
-        </div>
+      <div className="tab-options">
+        <PillGroup label="Action" options={EXPAND_SHORTEN} value={expandShortenMode}
+          onChange={onExpandShortenMode} disabled={disabled}
+          testIdPrefix="action-" testId="tab-options-expand-shorten" />
       </div>
     );
   }
