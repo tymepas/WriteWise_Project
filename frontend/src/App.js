@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "@/App.css";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,6 +75,31 @@ const DEFAULT_OPTIONS = {
   rewriteGoal: null,
 };
 
+// Personalization is kept in this browser only (no accounts or database).
+const PROFILE_STORAGE_KEY = "writewise.profile";
+
+function loadProfile() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}");
+    const text = (value) => (typeof value === "string" ? value : "");
+    return { experience: text(saved.experience), targetRole: text(saved.targetRole), skills: text(saved.skills) };
+  } catch {
+    return { experience: "", targetRole: "", skills: "" };
+  }
+}
+
+function saveProfile(profile) {
+  try {
+    if (profile.experience || profile.targetRole || profile.skills) {
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    } else {
+      window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+    }
+  } catch {
+    // Storage can be unavailable (private mode, blocked site data); the app still works.
+  }
+}
+
 const SHOW_VARIATIONS = ["auto", "email", "rewrite", "tone", "paraphrase"];
 const SHOW_PERSONALIZATION = ["auto", "email", "rewrite", "tone", "humanize"];
 
@@ -106,9 +131,13 @@ export default function App() {
   const [mode, setMode] = useState("auto");
   const [input, setInput] = useState("");
   const [context, setContext] = useState("");
-  const [experience, setExperience] = useState("");
-  const [targetRole, setTargetRole] = useState("");
-  const [skills, setSkills] = useState("");
+  const [experience, setExperience] = useState(() => loadProfile().experience);
+  const [targetRole, setTargetRole] = useState(() => loadProfile().targetRole);
+  const [skills, setSkills] = useState(() => loadProfile().skills);
+
+  useEffect(() => {
+    saveProfile({ experience, targetRole, skills });
+  }, [experience, targetRole, skills]);
   const [variationsEnabled, setVariationsEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -210,8 +239,16 @@ export default function App() {
       if (requestId === requestIdRef.current) setResult(data);
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
-      const msg = err?.response?.data?.detail || "Something went wrong. Please try again.";
-      toast.error(msg);
+      // Only show server messages that are plain text (not HTML error pages or objects).
+      const detail = err?.response?.data?.detail;
+      if (typeof detail === "string" && detail) {
+        toast.error(detail);
+      } else if (err?.response?.status === 429) {
+        // Rate limited before reaching the API (e.g. by the Vercel Firewall).
+        toast.error("Too many requests. Please wait a minute and try again.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
@@ -361,6 +398,7 @@ export default function App() {
               onExperienceChange={setExperience}
               onTargetRoleChange={setTargetRole}
               onSkillsChange={setSkills}
+              recommended={mode === "email"}
               disabled={loading}
             />
           )}

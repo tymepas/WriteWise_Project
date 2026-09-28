@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -9,10 +9,17 @@ export default function PersonalizationPanel({
   onExperienceChange,
   onTargetRoleChange,
   onSkillsChange,
+  recommended = false,
   disabled,
 }) {
-  const [open, setOpen] = useState(false);
   const hasData = !!(experience || targetRole || skills);
+  const [open, setOpen] = useState(recommended && !hasData);
+
+  // Job emails can only mention background the user gives, so surface the
+  // fields when they matter and are still empty.
+  useEffect(() => {
+    if (recommended && !hasData) setOpen(true);
+  }, [recommended, hasData]);
 
   return (
     <div className="personalization-panel">
@@ -27,6 +34,12 @@ export default function PersonalizationPanel({
         {hasData && <span className="data-dot" aria-hidden="true" />}
         {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
       </button>
+
+      {recommended && !hasData && (
+        <p className="personalization-hint" data-testid="personalization-hint">
+          Add your experience and skills so the email can describe your real background.
+        </p>
+      )}
 
       {open && (
         <div className="personalization-fields" data-testid="personalization-fields">
@@ -65,6 +78,7 @@ export default function PersonalizationPanel({
               disabled={disabled}
             />
           </div>
+          <p className="personalization-note">Saved in this browser only.</p>
         </div>
       )}
     </div>

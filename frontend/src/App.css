@@ -552,6 +552,22 @@
   flex-shrink: 0;
 }
 
+.personalization-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: #71717A;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.personalization-note {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #52525B;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
 .personalization-fields {
   margin-top: 0.75rem;
   padding: 1.25rem;

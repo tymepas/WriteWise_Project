@@ -177,11 +177,14 @@ export default function OutputSection({ result, onRegenerate, loading }) {
       {/* Evaluation */}
       {evaluation && (
         <div className="evaluation-section" data-testid="evaluation-section">
-          <div className="input-label">Output evaluation</div>
+          <div className="input-label" title="Scores are the AI's own assessment of this output">AI self-check</div>
           <div className="scores-grid">
             <ScoreBar label="Clarity" score={evaluation.clarity} />
             <ScoreBar label="Professionalism" score={evaluation.professionalism} />
-            <ScoreBar label="Personalization" score={evaluation.personalization} />
+            {/* Only scored when a profile was provided. */}
+            {evaluation.personalization != null && (
+              <ScoreBar label="Personalization" score={evaluation.personalization} />
+            )}
           </div>
           {evaluation.suggestion && (
             <p className="eval-suggestion" data-testid="eval-suggestion">

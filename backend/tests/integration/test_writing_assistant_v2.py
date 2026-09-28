@@ -8,17 +8,16 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 class TestAutoMode:
     """Auto mode detection tests"""
 
-    def test_auto_mode_grammar_detection(self):
+    def test_auto_mode_grammar_input_is_rewritten(self):
         r = requests.post(f"{BASE_URL}/api/generate", json={
             "mode": "auto",
             "input": "I has went to the store and buyed many things their.",
         })
         assert r.status_code == 200
         data = r.json()
-        assert data.get("detected_mode") is not None
         assert data["mode"] == "auto"
-        # Should detect grammar mode
-        assert data.get("detected_mode") == "grammar"
+        # The Auto prompt reports only "email" or "rewrite"; grammar fixes happen as part of a rewrite.
+        assert data.get("detected_mode") == "rewrite"
         assert data.get("output") is not None
 
     def test_auto_mode_email_detection(self):
@@ -79,6 +78,7 @@ class TestWhyGoodFit:
     """Why Good Fit section tests"""
 
     def test_email_mode_job_posting_returns_why_good_fit(self):
+        # Fit bullets must be grounded in background the user supplies, so give a profile.
         r = requests.post(f"{BASE_URL}/api/generate", json={
             "mode": "email",
             "input": """Senior Software Engineer at TechCorp
@@ -87,6 +87,8 @@ Requirements:
 - Experience with distributed systems
 - Strong communication skills
 About: We build developer tools used by 50,000 teams.""",
+            "experience": "6 years as a backend engineer building Django services",
+            "skills": "Python, Django, Kafka",
         })
         assert r.status_code == 200
         data = r.json()
@@ -123,7 +125,8 @@ class TestEvaluation:
         assert "suggestion" in ev
         assert 1 <= ev["clarity"] <= 10
         assert 1 <= ev["professionalism"] <= 10
-        assert 1 <= ev["personalization"] <= 10
+        # No profile was supplied, so there is nothing to score for personalization.
+        assert ev["personalization"] is None
 
     def test_personalization_score_higher_with_profile(self):
         r = requests.post(f"{BASE_URL}/api/generate", json={

@@ -30,10 +30,12 @@ Fix grammar, rewrite content, generate emails, paraphrase text, summarize docume
 
 ### Smart Features
 
-- **Personalization Panel** — Enter your experience, target role, and skills. The AI uses this to personalize outputs, especially emails and rewrites
+- **Personalization Panel** — Enter your experience, target role, and skills. The AI uses this to personalize outputs, especially emails and rewrites. Saved in your browser (`localStorage`) only, and opened automatically in Email mode while empty
 - **Output Variations** — Generate 3 versions at once: Professional, Confident, and Friendly
-- **Why You're a Good Fit** — For job postings, auto-generates 2-3 bullet points explaining your fit
-- **Output Evaluation** — Scores output on Clarity, Professionalism, and Personalization (1-10) with an improvement suggestion
+- **Why You're a Good Fit** — For job postings, 2-3 bullets that connect background you supplied to the role's requirements. Only shown when you have given your background
+- **AI Self-Check** — The AI's own scores for Clarity and Professionalism (1-10), plus Personalization when a profile was given, and one improvement suggestion. Scores the model does not return validly are left out, never filled in
+- **Grounded job emails** — The AI only states experience, skills and qualifications you supplied; a job posting's requirements are never presented as your background, and names or placeholders like `[Your Name]` are not invented
+- **Facts kept on tone changes** — Numbers, dates, deadlines, request counts and concrete requests are kept when the tone changes
 - **Quick Templates** — One-click starters for Job Application, Follow-up Email, Cold Outreach, and Referral Request
 - **Regenerate** — Re-run the same request for a fresh output
 - **Copy to Clipboard** — One-click copy with fallback support
@@ -70,6 +72,7 @@ writewise/
 ├── backend/
 │   ├── server.py          # FastAPI app, all 10 writing modes, prompt construction, OpenAI call
 │   ├── requirements.txt   # Runtime deps (via api/requirements.txt) + uvicorn and test tools
+│   ├── tests/             # Mocked API tests; tests/integration/ holds opt-in live OpenAI tests
 │   ├── .env.example       # Template for backend/.env
 │   └── .env               # OPENAI_API_KEY, OPENAI_MODEL, CORS_ORIGINS (not committed)
 │
@@ -168,6 +171,20 @@ npm run build
 
 `REACT_APP_BACKEND_URL` is baked into the bundle at build time. When it is not set, the frontend calls the API on its own origin (`/api/...`), which is how the Vercel deployment works.
 
+### 4. Tests
+
+With the backend virtual environment active, from the repository root:
+
+```bash
+pytest backend/tests
+```
+
+This runs the mocked tests (`backend/tests/test_api_mocked.py`), which use a fake OpenAI client: no network calls and no API cost. The live tests in `backend/tests/integration/` call a running backend and the real OpenAI API, so they are skipped unless you enable them:
+
+```bash
+WRITEWISE_LIVE_TESTS=1 REACT_APP_BACKEND_URL=http://127.0.0.1:8001 pytest backend/tests/integration
+```
+
 ---
 
 ## Deploying to Vercel
@@ -188,6 +205,19 @@ WriteWise deploys as a single Vercel project: the React build is served as stati
 4. Deploy.
 
 The Python runtime version is pinned by `api/.python-version` (3.12), and the Python function installs only `api/requirements.txt`.
+
+### Abuse and cost protection
+
+`/api/generate` is public and every request spends OpenAI credit. The app itself bounds the cost of a single request (the input limits above and the 6,000 output-token cap), but it does **not** rate limit: Vercel runs the API on many short-lived instances, so a counter in application memory would not be a real global limit. Use these two platform controls instead:
+
+1. **Vercel Firewall rate limit** (available on Hobby: 1 rate-limit rule per project). In the Vercel dashboard, open the project → **Firewall** → **Configure** → **+ New Rule**:
+   - Name: `Limit /api/generate`
+   - If: **Request Path** *equals* `/api/generate`
+   - Then: **Rate Limit**, **Fixed Window**, Time Window `60s`, Request Limit `10`, key **IP**, action **Default (429)**
+   - **Save Rule**, then **Review Changes** → **Publish**
+
+   You can start with the **Log** action to see real traffic first. Vercel counts rate limits per region, so a client spread across regions can exceed the limit somewhat. The frontend shows "Too many requests. Please wait a minute and try again." when this rule responds with 429.
+2. **OpenAI spending limit.** Use a dedicated OpenAI project for WriteWise and set a monthly budget and usage alerts on it in the OpenAI dashboard, so a traffic spike cannot run up an unlimited bill.
 
 ---
 
@@ -227,6 +257,10 @@ Generate writing output based on the selected mode.
 | `tone` | string | No | Tone mode only: `professional`, `casual`, `friendly`, `diplomatic`, `formal`, `confident`, `persuasive`, `empathetic`. If omitted, the tone is taken from `context` (default `professional`) |
 | `rewrite_goal` | string | No | Rewrite mode only: `clear_concise`, `more_direct`, `more_polished`, `more_persuasive`, `simplify`, `keep_style`. If omitted, the default rewrite is used |
 
+**Limits:** `input` 12,000 characters, `context` 2,000, `experience` 1,000, `target_role` 300, `skills` 1,000. Longer values are rejected, never truncated.
+
+`paraphrase_mode`, `summary_type`, `tone` and `rewrite_goal` are case-insensitive. A missing or empty value uses the default; any other value not in the lists above is rejected with a 400.
+
 **Response:**
 
 ```json
@@ -247,6 +281,22 @@ Generate writing output based on the selected mode.
   }
 }
 ```
+
+- `why_good_fit` is `null` unless the input is a job posting and the user supplied their own background.
+- `evaluation` is `null` if the model did not return valid 1-10 scores. `evaluation.personalization` is `null` when no `experience`, `target_role` or `skills` were sent. `evaluation.suggestion` may be `null`.
+- `detected_mode` is `email` or `rewrite` in Auto mode, otherwise `null`.
+
+**Errors** are returned as `{"detail": "<message safe to show the user>"}`; internal error text is only logged on the server.
+
+| Status | When |
+|--------|------|
+| 400 | Invalid request: empty or too-long text, unknown mode or option, malformed JSON |
+| 422 | The result would be too long to generate in full (try shorter text or turn off variations), or the text was refused by the AI service |
+| 429 | The OpenAI account is rate limited, or the Vercel Firewall rate limit was hit |
+| 500 | The API key or model is not configured correctly, or an unexpected error |
+| 502 / 503 / 504 | The AI service failed, could not be reached, or timed out |
+
+Each request to OpenAI is capped at 6,000 output tokens, with a 90 second timeout and one retry.
 
 ### `GET /api/`
 
