@@ -111,10 +111,14 @@
 }
 
 /* ===== SHELL & HEADER ===== */
+/*
+ * Fluid application shell: the side gutter grows gently with the viewport and the
+ * shell stops at 1840px, so large screens are used without stretching text edge to edge.
+ */
 .shell {
   position: relative;
   z-index: 1;
-  width: min(1320px, calc(100% - 48px));
+  width: min(1840px, calc(100% - clamp(48px, 5vw, 160px)));
   margin-inline: auto;
   padding: 18px 0 72px;
 }
@@ -124,7 +128,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 22px;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  /* Hairline that ties the header to the full shell width */
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07) 12%, rgba(255, 255, 255, 0.07) 88%, transparent) 1;
 }
 
 .ww-logo {
@@ -247,6 +255,100 @@
 /* ===== HERO ===== */
 .hero {
   padding: 6px 0 4px;
+}
+
+.hero-intro {
+  min-width: 0;
+}
+
+/* ===== HOW IT WORKS (large screens, beside the hero) ===== */
+.how-it-works {
+  display: none;
+}
+
+@media (min-width: 1360px) {
+  .hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 48px;
+  }
+
+  .how-it-works {
+    display: block;
+    flex: 0 1 660px;
+    min-width: 0;
+    padding-bottom: 4px;
+    transition: opacity var(--dur-ui) ease, transform var(--dur-ui) var(--ease-out), visibility 0s linear 0s;
+    animation: fade-up var(--dur-ai) var(--ease-out) 120ms both;
+  }
+
+  /* Hidden while a result is shown; the space is kept so nothing below jumps. */
+  .how-it-works.is-hidden {
+    opacity: 0;
+    transform: translateY(-4px);
+    visibility: hidden;
+    transition: opacity var(--dur-ui) ease, transform var(--dur-ui) var(--ease-out), visibility 0s linear var(--dur-ui);
+  }
+}
+
+.how-title {
+  margin: 0 0 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-step {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+  position: relative;
+}
+
+/* Short accent at the start of each step's rule */
+.how-step::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--violet), 0.9), rgba(var(--blue), 0.6));
+}
+
+.how-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  color: #A5B4FC;
+}
+
+.how-step-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.how-step-text {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 
 .heading-1 {
@@ -927,6 +1029,35 @@
 
 .context-panel.state-loading {
   border-color: rgba(var(--violet), 0.4);
+}
+
+/* The result pane gets a very soft glow so it reads as the active pane. */
+.context-panel.state-result {
+  border-color: rgba(var(--violet), 0.28);
+  box-shadow:
+    0 0 0 1px rgba(var(--violet), 0.06),
+    0 30px 80px -44px rgba(var(--indigo), 0.55);
+}
+
+@media (min-width: 960px) {
+  .context-panel {
+    transition: border-color var(--dur-ai) ease, box-shadow var(--dur-ai) ease;
+  }
+
+  /* A slow, faint light that travels along the panel's top edge, then rests. */
+  .context-panel::before {
+    background:
+      linear-gradient(90deg, transparent, rgba(237, 233, 254, 0.75), transparent) no-repeat,
+      linear-gradient(90deg, transparent, rgba(var(--violet), 0.6), rgba(var(--blue), 0.5), transparent);
+    background-size: 30% 100%, 100% 100%;
+    background-position: -50% 0, 0 0;
+    animation: edge-light 11s var(--ease-in-out) 1.5s infinite;
+  }
+}
+
+@keyframes edge-light {
+  0%        { background-position: -50% 0, 0 0; }
+  45%, 100% { background-position: 150% 0, 0 0; }
 }
 
 /* Short panel states follow the page on desktop; results scroll with the page. */
@@ -1673,7 +1804,8 @@
   }
 
   .site-header {
-    padding-bottom: 16px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .subheading {
@@ -1714,10 +1846,188 @@
   }
 }
 
+/* ===== QUICK TIP (settings column, 1600px+ only) ===== */
+.quick-tip {
+  display: none;
+  padding: 14px 16px;
+  border: 1px solid rgba(var(--indigo), 0.28);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(var(--indigo), 0.12) 0%, transparent 60%),
+    rgba(17, 17, 22, 0.6);
+  box-shadow: 0 14px 34px -26px rgba(var(--indigo), 0.7);
+  animation: fade-up var(--dur-ui) var(--ease-out) both;
+}
+
+.quick-tip-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #A5B4FC;
+}
+
+.quick-tip-text {
+  margin: 8px 0 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  animation: fade-up var(--dur-ui) var(--ease-out) both;
+}
+
+/* ===== 1440-CLASS DESKTOPS: keep Generate above the fold on ~900px-tall screens =====
+ * The editor's minimum height follows the viewport height here (never below 270px),
+ * so Additional context, Personalize and Generate stay visible without scrolling.
+ */
+@media (min-width: 1360px) and (max-width: 1599px) {
+  .main-textarea {
+    min-height: clamp(270px, calc(100vh - 630px), 460px) !important;
+  }
+}
+
+/* ===== LARGE DESKTOP (1600px+) =====
+ * The wider shell gives both panes more room. Extra width goes to spacing, a
+ * settings column beside the editor and the result pane; readable text widths stay capped.
+ */
+@media (min-width: 1600px) {
+  .workspace {
+    gap: 24px 40px;
+  }
+
+  /* Tabs share the full width of the navigation bar */
+  .mode-trigger {
+    flex: 1 0 auto !important;
+    justify-content: center !important;
+  }
+
+  /*
+   * Editor with a settings column beside it. This keeps the typing measure readable
+   * (about 100 characters) instead of one very wide text box, and keeps Generate
+   * above the fold. The column holds the existing controls in their existing order.
+   */
+  .workspace-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 31%, 372px);
+    grid-template-rows: auto auto auto 1fr;
+    gap: 16px 20px;
+  }
+
+  .editor-card {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 26px 14px;
+    border-radius: 18px;
+  }
+
+  .main-textarea {
+    flex: 1 1 auto;
+    font-size: 1.0625rem !important;
+  }
+
+  .options-card {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+  }
+
+  .personalization-panel {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .fields-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .controls-row {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: start;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .generate-btn {
+    width: 100%;
+  }
+
+  /* Mode tip fills the free space under Generate in the settings column. */
+  .quick-tip {
+    display: block;
+    grid-column: 2;
+    grid-row: 4;
+    align-self: start;
+    margin-top: 6px;
+  }
+
+  /* Step aside when the column is already full, and while a result is shown. */
+  .personalization-panel.is-open ~ .quick-tip,
+  .workspace.state-result .quick-tip {
+    display: none;
+  }
+
+  .context-panel {
+    padding: 24px;
+    border-radius: 22px;
+  }
+
+  .context-panel::before {
+    left: 24px;
+    right: 24px;
+  }
+
+  .panel-state {
+    gap: 22px;
+  }
+
+  .template-grid {
+    gap: 12px;
+  }
+
+  .template-card {
+    padding: 14px 16px;
+    gap: 14px;
+  }
+
+  .template-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .spotlight {
+    padding: 20px;
+  }
+
+  /* The result pane is wide here, so the text is larger with a ~85 character measure. */
+  .output-content {
+    padding: 20px 24px !important;
+  }
+
+  .output-text {
+    font-size: 1rem !important;
+    max-width: 38em;
+  }
+
+  .why-fit-bullet {
+    font-size: 0.94rem;
+    max-width: 44em;
+  }
+}
+
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
   .bg-grid,
-  .bg-glow {
+  .bg-glow,
+  .context-panel::before {
     animation: none !important;
   }
 

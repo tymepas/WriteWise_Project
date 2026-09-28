@@ -17,6 +17,8 @@ import LoadingCard from "@/components/LoadingCard";
 import ModeNav from "@/components/ModeNav";
 import HumanizeSpotlight, { HUMANIZE_EXAMPLE } from "@/components/HumanizeSpotlight";
 import CharCount, { LIMITS, warnIfPasteTooLong } from "@/components/CharCount";
+import HowItWorks from "@/components/HowItWorks";
+import QuickTip from "@/components/QuickTip";
 
 // Empty in production so requests go to the same origin (/api on Vercel).
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
@@ -346,15 +348,18 @@ export default function App() {
           {/* Spans both panes so all nine modes fit on one row on desktop */}
           <div className="workspace-top">
             <div className="hero">
-              <h1 className="heading-1" id="page-title">
-                Write better. <span className="heading-accent">Get noticed.</span>
-              </h1>
-              <p className="subheading">
-                Paste your text, draft, email, or job post, and let WriteWise help you make it better.{" "}
-                <button type="button" className="inline-action" onClick={handleTryExample} data-testid="cta-try-example">
-                  Try an example
-                </button>
-              </p>
+              <div className="hero-intro">
+                <h1 className="heading-1" id="page-title">
+                  Write better. <span className="heading-accent">Get noticed.</span>
+                </h1>
+                <p className="subheading">
+                  Paste your text, draft, email, or job post, and let WriteWise help you make it better.{" "}
+                  <button type="button" className="inline-action" onClick={handleTryExample} data-testid="cta-try-example">
+                    Try an example
+                  </button>
+                </p>
+              </div>
+              <HowItWorks hidden={panelState === "result"} />
             </div>
 
             <ModeNav
@@ -484,6 +489,8 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            <QuickTip mode={mode} />
           </section>
 
           {/* Right panel: Quick start, then loading, then the result */}
