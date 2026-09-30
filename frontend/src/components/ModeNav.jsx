@@ -89,8 +89,10 @@ export default function ModeNav({ modes, value, onChange, description }) {
                 data-testid={`mode-tab-${m.id}`}
               >
                 {Icon && <Icon size={14} strokeWidth={1.75} className="mode-icon" aria-hidden="true" />}
-                {m.label}
-                {m.badge && <span className="tab-badge">{m.badge}</span>}
+                <span className="mode-label">
+                  {m.label}
+                  {m.badge && <span className="tab-badge">{m.badge}</span>}
+                </span>
               </TabsTrigger>
             );
           })}

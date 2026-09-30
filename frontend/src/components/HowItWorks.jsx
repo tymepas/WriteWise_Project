@@ -5,8 +5,8 @@ const STEPS = [
 ];
 
 /**
- * Static three-step guide shown beside the hero on large screens (hidden by CSS on
- * smaller ones). It fades out once a result is on screen so it never competes with it.
+ * Static three-step guide shown compactly in the header on large screens (hidden by
+ * CSS on smaller ones). It fades out once a result is on screen.
  */
 export default function HowItWorks({ hidden = false }) {
   return (

@@ -48,16 +48,17 @@ const PLACEHOLDERS = {
   humanize:       "Paste AI-generated or overly formal text to make it sound human...",
 };
 
+// Short enough to fit the context field on a 390px phone without clipping.
 const CONTEXT_PLACEHOLDERS = {
-  auto:           "e.g. Make it more confident, applying for a startup role...",
-  grammar:        "e.g. Keep British English spelling...",
-  email:          "e.g. Friendly and direct, startup culture...",
-  tone:           "e.g. Keep it concise and suitable for a client-facing email...",
-  rewrite:        "e.g. Make it punchier, cut anything vague...",
-  paraphrase:     "e.g. Keep it under 100 words, avoid jargon...",
-  summarize:      "e.g. Focus on the key statistics, skip the examples...",
-  expand_shorten: "e.g. Add more context to the second paragraph...",
-  humanize:       "e.g. Keep it conversational, target a general audience...",
+  auto:           "e.g. More confident, startup role",
+  grammar:        "e.g. Keep British English spelling",
+  email:          "e.g. Friendly, direct, startup tone",
+  tone:           "e.g. Concise, for a client email",
+  rewrite:        "e.g. Punchier, cut anything vague",
+  paraphrase:     "e.g. Under 100 words, no jargon",
+  summarize:      "e.g. Focus on the key statistics",
+  expand_shorten: "e.g. Expand the second paragraph",
+  humanize:       "e.g. Conversational, general audience",
 };
 
 const LOADING_MSGS = {
@@ -337,6 +338,7 @@ export default function App() {
       <div className="shell">
         <header className="site-header">
           <WritewiseLogo iconSize={24} />
+          <HowItWorks hidden={panelState === "result"} />
           <span className={`ai-status${loading ? " is-working" : ""}`} data-testid="ai-status">
             <span className="ai-status-dot" aria-hidden="true" />
             {loading ? "WriteWise is working..." : "Ready to write"}
@@ -345,10 +347,14 @@ export default function App() {
 
         {/* state-* lets the desktop layout give a result more room */}
         <main className={`workspace state-${panelState}`} aria-labelledby="page-title">
-          {/* Spans both panes so all nine modes fit on one row on desktop */}
-          <div className="workspace-top">
-            <div className="hero">
-              <div className="hero-intro">
+          {/*
+            The writing workspace. On large screens it is one card (headline, modes,
+            editor and controls) beside the Quick Start panel; below 1600px it is
+            display: contents, so the hero and modes span both panes as before.
+          */}
+          <div className="workspace-primary">
+            <div className="workspace-top">
+              <div className="hero">
                 <h1 className="heading-1" id="page-title">
                   Write better. <span className="heading-accent">Get noticed.</span>
                 </h1>
@@ -359,139 +365,138 @@ export default function App() {
                   </button>
                 </p>
               </div>
-              <HowItWorks hidden={panelState === "result"} />
-            </div>
 
-            <ModeNav
-              modes={MODES}
-              value={mode}
-              onChange={handleModeChange}
-              description={currentMode.description}
-            />
-          </div>
-
-          <section className="workspace-main" aria-label="Editor">
-            {/* Editor */}
-            <div className="editor-card">
-              <div className="field-label-row">
-                <label className="input-label" htmlFor="main-input">Your text</label>
-                <div className="editor-meta">
-                  <CharCount id="main-input-count" value={input} max={LIMITS.input} />
-                  <button
-                    type="button"
-                    className="input-clear-btn"
-                    onClick={handleClear}
-                    disabled={!input && !context && !result && !loading}
-                    data-testid="clear-input-btn"
-                    title="Clear the text and start over"
-                  >
-                    <X size={12} strokeWidth={1.75} aria-hidden="true" />
-                    Clear
-                  </button>
-                </div>
-              </div>
-              <Textarea
-                id="main-input"
-                data-testid="main-input"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onPaste={(e) => warnIfPasteTooLong(e, LIMITS.input, "Your text")}
-                maxLength={LIMITS.input}
-                aria-describedby="main-input-count"
-                placeholder={PLACEHOLDERS[mode]}
-                className="main-textarea"
-                disabled={loading}
+              <ModeNav
+                modes={MODES}
+                value={mode}
+                onChange={handleModeChange}
+                description={currentMode.description}
               />
             </div>
 
-            {/* Mode options and extra instructions */}
-            <div className="options-card">
-              <TabOptions
-                mode={mode}
-                paraphraseMode={paraphraseMode}
-                onParaphraseMode={setParaphraseMode}
-                summaryType={summaryType}
-                onSummaryType={setSummaryType}
-                expandShortenMode={expandShortenMode}
-                onExpandShortenMode={setExpandShortenMode}
-                tone={tone}
-                onTone={setTone}
-                rewriteGoal={rewriteGoal}
-                onRewriteGoal={setRewriteGoal}
-                disabled={loading}
-              />
-              <div className="option-field">
+            <section className="workspace-main" aria-label="Editor">
+              {/* Editor */}
+              <div className="editor-card">
                 <div className="field-label-row">
-                  <label className="input-label" htmlFor="context-input">Additional context (optional)</label>
-                  <CharCount id="context-input-count" value={context} max={LIMITS.context} />
+                  <label className="input-label" htmlFor="main-input">Your text</label>
+                  <div className="editor-meta">
+                    <CharCount id="main-input-count" value={input} max={LIMITS.input} />
+                    <button
+                      type="button"
+                      className="input-clear-btn"
+                      onClick={handleClear}
+                      disabled={!input && !context && !result && !loading}
+                      data-testid="clear-input-btn"
+                      title="Clear the text and start over"
+                    >
+                      <X size={12} strokeWidth={1.75} aria-hidden="true" />
+                      Clear
+                    </button>
+                  </div>
                 </div>
-                <Input
-                  id="context-input"
-                  data-testid="context-input"
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
-                  onPaste={(e) => warnIfPasteTooLong(e, LIMITS.context, "Additional context")}
-                  maxLength={LIMITS.context}
-                  aria-describedby="context-input-count"
-                  placeholder={CONTEXT_PLACEHOLDERS[mode]}
-                  className="context-input"
+                <Textarea
+                  id="main-input"
+                  data-testid="main-input"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onPaste={(e) => warnIfPasteTooLong(e, LIMITS.input, "Your text")}
+                  maxLength={LIMITS.input}
+                  aria-describedby="main-input-count"
+                  placeholder={PLACEHOLDERS[mode]}
+                  className="main-textarea"
                   disabled={loading}
                 />
               </div>
-            </div>
 
-            {SHOW_PERSONALIZATION.includes(mode) && (
-              <PersonalizationPanel
-                experience={experience}
-                targetRole={targetRole}
-                skills={skills}
-                onExperienceChange={setExperience}
-                onTargetRoleChange={setTargetRole}
-                onSkillsChange={setSkills}
-                recommended={mode === "email"}
-                disabled={loading}
-              />
-            )}
-
-            <div className="controls-row">
-              <Button
-                data-testid="generate-btn"
-                onClick={handleGenerate}
-                disabled={loading}
-                aria-busy={loading}
-                className={`generate-btn${loading ? " is-loading" : ""}${justCompleted ? " is-complete" : ""}`}
-              >
-                <span className="generate-sheen" aria-hidden="true" />
-                {loading ? (
-                  <>
-                    <Loader2 size={16} className="spin" strokeWidth={1.75} aria-hidden="true" />
-                    {loadingMsg}
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={16} strokeWidth={1.75} className="generate-icon" aria-hidden="true" />
-                    {btnLabel}
-                    <ArrowRight size={15} strokeWidth={1.75} className="generate-arrow" aria-hidden="true" />
-                  </>
-                )}
-              </Button>
-
-              {SHOW_VARIATIONS.includes(mode) && (
-                <div className="variations-toggle" data-testid="variations-toggle-row">
-                  <Switch
-                    id="variations-switch"
-                    data-testid="variations-switch"
-                    checked={variationsEnabled}
-                    onCheckedChange={setVariationsEnabled}
+              {/* Mode options and extra instructions */}
+              <div className="options-card">
+                <TabOptions
+                  mode={mode}
+                  paraphraseMode={paraphraseMode}
+                  onParaphraseMode={setParaphraseMode}
+                  summaryType={summaryType}
+                  onSummaryType={setSummaryType}
+                  expandShortenMode={expandShortenMode}
+                  onExpandShortenMode={setExpandShortenMode}
+                  tone={tone}
+                  onTone={setTone}
+                  rewriteGoal={rewriteGoal}
+                  onRewriteGoal={setRewriteGoal}
+                  disabled={loading}
+                />
+                <div className="option-field">
+                  <div className="field-label-row">
+                    <label className="input-label" htmlFor="context-input">Additional context (optional)</label>
+                    <CharCount id="context-input-count" value={context} max={LIMITS.context} />
+                  </div>
+                  <Input
+                    id="context-input"
+                    data-testid="context-input"
+                    value={context}
+                    onChange={(e) => setContext(e.target.value)}
+                    onPaste={(e) => warnIfPasteTooLong(e, LIMITS.context, "Additional context")}
+                    maxLength={LIMITS.context}
+                    aria-describedby="context-input-count"
+                    placeholder={CONTEXT_PLACEHOLDERS[mode]}
+                    className="context-input"
                     disabled={loading}
                   />
-                  <label className="toggle-label" htmlFor="variations-switch">Multiple versions</label>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <QuickTip mode={mode} />
-          </section>
+              {SHOW_PERSONALIZATION.includes(mode) && (
+                <PersonalizationPanel
+                  experience={experience}
+                  targetRole={targetRole}
+                  skills={skills}
+                  onExperienceChange={setExperience}
+                  onTargetRoleChange={setTargetRole}
+                  onSkillsChange={setSkills}
+                  recommended={mode === "email"}
+                  disabled={loading}
+                />
+              )}
+
+              <div className="controls-row">
+                <Button
+                  data-testid="generate-btn"
+                  onClick={handleGenerate}
+                  disabled={loading}
+                  aria-busy={loading}
+                  className={`generate-btn${loading ? " is-loading" : ""}${justCompleted ? " is-complete" : ""}`}
+                >
+                  <span className="generate-sheen" aria-hidden="true" />
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="spin" strokeWidth={1.75} aria-hidden="true" />
+                      {loadingMsg}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} strokeWidth={1.75} className="generate-icon" aria-hidden="true" />
+                      {btnLabel}
+                      <ArrowRight size={15} strokeWidth={1.75} className="generate-arrow" aria-hidden="true" />
+                    </>
+                  )}
+                </Button>
+
+                {SHOW_VARIATIONS.includes(mode) && (
+                  <div className="variations-toggle" data-testid="variations-toggle-row">
+                    <Switch
+                      id="variations-switch"
+                      data-testid="variations-switch"
+                      checked={variationsEnabled}
+                      onCheckedChange={setVariationsEnabled}
+                      disabled={loading}
+                    />
+                    <label className="toggle-label" htmlFor="variations-switch">Multiple versions</label>
+                  </div>
+                )}
+
+                <QuickTip mode={mode} />
+              </div>
+            </section>
+          </div>
 
           {/* Right panel: Quick start, then loading, then the result */}
           <aside

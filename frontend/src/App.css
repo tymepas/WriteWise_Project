@@ -120,16 +120,16 @@
   z-index: 1;
   width: min(1840px, calc(100% - clamp(48px, 5vw, 160px)));
   margin-inline: auto;
-  padding: 18px 0 72px;
+  padding: 14px 0 64px;
 }
 
 .site-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 14px;
-  margin-bottom: 18px;
+  gap: 24px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
   /* Hairline that ties the header to the full shell width */
   border-bottom: 1px solid transparent;
   border-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07) 12%, rgba(255, 255, 255, 0.07) 88%, transparent) 1;
@@ -169,7 +169,7 @@
   border-radius: 999px;
   background: rgba(20, 20, 26, 0.7);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   color: var(--text-muted);
   white-space: nowrap;
@@ -204,22 +204,27 @@
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px 24px;
+  gap: 16px 24px;
   align-items: start;
+}
+
+/* A real card only on large screens (see the 1600px+ section) */
+.workspace-primary {
+  display: contents;
 }
 
 .workspace-top {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   min-width: 0;
 }
 
 .workspace-main {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -232,12 +237,20 @@
   .workspace {
     /* Same split as 1.95fr : 0.85fr (69.6%) */
     grid-template-columns: min(calc((100% - 28px) * 0.696), calc(100% - 348px)) minmax(0, 1fr);
-    gap: 20px 28px;
+    gap: 16px 28px;
     transition: grid-template-columns var(--dur-ai) var(--ease-out);
   }
 
   .workspace.state-result {
     grid-template-columns: min(calc((100% - 28px) * 0.56), calc(100% - 408px)) minmax(0, 1fr);
+  }
+
+  /*
+   * The editor follows the viewport height (240-440px), so Additional context,
+   * Personalize and Generate stay on screen on typical laptop and desktop heights.
+   */
+  .workspace .main-textarea {
+    min-height: clamp(240px, calc(100vh - 600px), 440px) !important;
   }
 
   /* A shorter editor in the result state keeps the two columns balanced. */
@@ -248,64 +261,54 @@
 
 @media (min-width: 1280px) {
   .workspace {
-    gap: 22px 36px;
+    gap: 16px 36px;
   }
 }
 
 /* ===== HERO ===== */
 .hero {
-  padding: 6px 0 4px;
+  padding: 2px 0 0;
 }
 
-.hero-intro {
-  min-width: 0;
-}
-
-/* ===== HOW IT WORKS (large screens, beside the hero) ===== */
+/* ===== HOW IT WORKS (compact, in the header on large screens) ===== */
 .how-it-works {
   display: none;
 }
 
 @media (min-width: 1360px) {
-  .hero {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 48px;
-  }
-
   .how-it-works {
-    display: block;
-    flex: 0 1 660px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
     min-width: 0;
-    padding-bottom: 4px;
     transition: opacity var(--dur-ui) ease, transform var(--dur-ui) var(--ease-out), visibility 0s linear 0s;
     animation: fade-up var(--dur-ai) var(--ease-out) 120ms both;
   }
 
-  /* Hidden while a result is shown; the space is kept so nothing below jumps. */
+  /* Hidden while a result is shown; the header keeps its height, so nothing moves. */
   .how-it-works.is-hidden {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-3px);
     visibility: hidden;
     transition: opacity var(--dur-ui) ease, transform var(--dur-ui) var(--ease-out), visibility 0s linear var(--dur-ui);
   }
 }
 
 .how-title {
-  margin: 0 0 12px;
+  margin: 0;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   font-weight: 400;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-subtle);
+  white-space: nowrap;
 }
 
 .how-steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -313,42 +316,45 @@
 
 .how-step {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  padding-top: 11px;
-  border-top: 1px solid var(--border);
-  position: relative;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
 }
 
-/* Short accent at the start of each step's rule */
-.how-step::before {
+/* Short connector between steps */
+.how-step:not(:last-child)::after {
   content: "";
-  position: absolute;
-  top: -1px;
-  left: 0;
-  width: 28px;
+  align-self: center;
+  width: 18px;
   height: 1px;
-  background: linear-gradient(90deg, rgba(var(--violet), 0.9), rgba(var(--blue), 0.6));
+  margin-left: 6px;
+  background: linear-gradient(90deg, rgba(var(--violet), 0.7), rgba(var(--blue), 0.4));
 }
 
 .how-number {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
   color: #A5B4FC;
 }
 
 .how-step-title {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-2);
 }
 
+/* Descriptions only where the header has room for them */
 .how-step-text {
+  display: none;
   font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--text-muted);
+  color: var(--text-subtle);
+}
+
+@media (min-width: 1600px) {
+  .how-step-text {
+    display: inline;
+  }
 }
 
 .heading-1 {
@@ -357,7 +363,7 @@
   letter-spacing: -0.035em;
   line-height: 1.08;
   color: var(--text);
-  margin: 0 0 10px;
+  margin: 0 0 6px;
 }
 
 .heading-accent {
@@ -373,7 +379,7 @@
   margin: 0;
   font-weight: 400;
   line-height: 1.6;
-  max-width: 640px;
+  max-width: 780px;
 }
 
 .inline-action {
@@ -406,20 +412,44 @@
   background: rgba(17, 17, 22, 0.75);
 }
 
-/* Edge fades hint that the row scrolls; set by ModeNav only when modes are hidden. */
-.mode-nav-track.fade-right {
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent 100%);
-  mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent 100%);
+/*
+ * Scroll cues, set by ModeNav only when modes are hidden: the tabs fade out at the
+ * edge (the bar itself stays solid) and a small chevron marks the side that continues.
+ */
+.mode-nav-track.fade-right .modes-list {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent 100%);
 }
 
-.mode-nav-track.fade-left {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px);
-  mask-image: linear-gradient(90deg, transparent 0, #000 36px);
+.mode-nav-track.fade-left .modes-list {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 48px);
+  mask-image: linear-gradient(90deg, transparent 0, #000 48px);
 }
 
-.mode-nav-track.fade-left.fade-right {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+.mode-nav-track.fade-left.fade-right .modes-list {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 48px, #000 calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 48px, #000 calc(100% - 56px), transparent 100%);
+}
+
+.mode-nav-track.fade-right::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 7px;
+  height: 7px;
+  margin-top: -4px;
+  border-top: 1.5px solid #A5B4FC;
+  border-right: 1.5px solid #A5B4FC;
+  transform: rotate(45deg);
+  opacity: 0.85;
+  pointer-events: none;
+  animation: scroll-nudge 1.6s var(--ease-in-out) 0.8s 3;
+}
+
+@keyframes scroll-nudge {
+  0%, 100% { transform: translateX(0) rotate(45deg); }
+  50%      { transform: translateX(3px) rotate(45deg); }
 }
 
 .modes-list {
@@ -479,6 +509,12 @@
   color: var(--text) !important;
 }
 
+.mode-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
 /* Tighter tabs on small laptops so all nine modes still fit on one row */
 @media (min-width: 960px) and (max-width: 1100px) {
   .mode-trigger {
@@ -514,7 +550,7 @@
 .tab-badge {
   display: inline-block;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.56rem;
+  font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #A5B4FC;
@@ -526,7 +562,7 @@
 }
 
 .mode-description {
-  margin: 10px 2px 0;
+  margin: 8px 2px 0;
   font-size: 0.82rem;
   color: var(--text-muted);
 }
@@ -534,7 +570,7 @@
 /* ===== SHARED LABELS & COUNTERS ===== */
 .input-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-subtle);
@@ -600,7 +636,7 @@
   border-radius: 4px;
   padding: 2px 0;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -1245,7 +1281,7 @@
 
 .spotlight-badge {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #DDD6FE;
@@ -1256,19 +1292,19 @@
 }
 
 .spotlight-copy {
-  margin: 10px 0 14px;
+  margin: 8px 0 12px;
   font-size: 0.95rem;
   line-height: 1.5;
   color: var(--text-2);
 }
 
 .transform-demo {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
 }
 
 .demo-caption {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-subtle);
@@ -1292,7 +1328,7 @@
 
 .demo-tag {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -1309,7 +1345,7 @@
 
 .demo-flow {
   position: relative;
-  height: 28px;
+  height: 24px;
 }
 
 .demo-line {
@@ -1377,8 +1413,8 @@
 .spotlight:hover .demo-after::after,
 .spotlight:focus-within .demo-after::after { animation-name: demo-sweep-b; }
 
-@keyframes demo-beam-a { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(22px); } }
-@keyframes demo-beam-b { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(22px); } }
+@keyframes demo-beam-a { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(18px); } }
+@keyframes demo-beam-b { 0% { opacity: 0; transform: translateY(-6px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(18px); } }
 @keyframes demo-dim-a  { 0% { opacity: 1; } 45% { opacity: 0.6; } 100% { opacity: 0.85; } }
 @keyframes demo-dim-b  { 0% { opacity: 1; } 45% { opacity: 0.6; } 100% { opacity: 0.85; } }
 @keyframes demo-glow-a {
@@ -1484,7 +1520,7 @@
 .loading-kicker {
   margin: 0;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #C4B5FD;
@@ -1508,7 +1544,7 @@
   gap: 12px;
   margin-top: 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -1564,7 +1600,7 @@
   border-radius: 999px;
   background: rgba(var(--violet), 0.1);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #C4B5FD;
@@ -1672,7 +1708,7 @@
 
 .output-block-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-subtle);
@@ -1743,7 +1779,7 @@
 
 .score-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -1841,21 +1877,24 @@
 
 @media (max-width: 380px) {
   .ai-status {
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     padding: 4px 9px;
   }
 }
 
-/* ===== QUICK TIP (settings column, 1600px+ only) ===== */
+/* ===== QUICK TIP (beside Generate, 1600px+ only) ===== */
 .quick-tip {
   display: none;
-  padding: 14px 16px;
-  border: 1px solid rgba(var(--indigo), 0.28);
-  border-radius: 14px;
+  align-items: center;
+  gap: 12px;
+  max-width: 560px;
+  margin-left: auto;
+  padding: 9px 14px;
+  border: 1px solid rgba(var(--indigo), 0.26);
+  border-radius: 12px;
   background:
-    radial-gradient(120% 120% at 0% 0%, rgba(var(--indigo), 0.12) 0%, transparent 60%),
+    radial-gradient(120% 140% at 0% 0%, rgba(var(--indigo), 0.12) 0%, transparent 60%),
     rgba(17, 17, 22, 0.6);
-  box-shadow: 0 14px 34px -26px rgba(var(--indigo), 0.7);
   animation: fade-up var(--dur-ui) var(--ease-out) both;
 }
 
@@ -1863,120 +1902,108 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  flex-shrink: 0;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.66rem;
+  font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #A5B4FC;
+  white-space: nowrap;
 }
 
 .quick-tip-text {
-  margin: 8px 0 0;
-  font-size: 0.86rem;
-  line-height: 1.5;
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
   color: var(--text-muted);
   animation: fade-up var(--dur-ui) var(--ease-out) both;
 }
 
-/* ===== 1440-CLASS DESKTOPS: keep Generate above the fold on ~900px-tall screens =====
- * The editor's minimum height follows the viewport height here (never below 270px),
- * so Additional context, Personalize and Generate stay visible without scrolling.
- */
-@media (min-width: 1360px) and (max-width: 1599px) {
-  .main-textarea {
-    min-height: clamp(270px, calc(100vh - 630px), 460px) !important;
-  }
-}
-
 /* ===== LARGE DESKTOP (1600px+) =====
- * The wider shell gives both panes more room. Extra width goes to spacing, a
- * settings column beside the editor and the result pane; readable text widths stay capped.
+ * Two-column workspace: one card with the headline, modes, editor and controls,
+ * beside the Quick Start / Humanize panel (about 64/36 empty, 56/44 with a result).
  */
 @media (min-width: 1600px) {
   .workspace {
-    gap: 24px 40px;
+    grid-template-columns: min(calc((100% - 32px) * 0.64), calc(100% - 460px)) minmax(0, 1fr);
+    gap: 32px;
+    /* Both cards share one height while the page is empty or loading */
+    align-items: stretch;
   }
 
-  /* Tabs share the full width of the navigation bar */
+  .workspace.state-result {
+    align-items: start;
+  }
+
+  .workspace-primary {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    padding: 26px 28px 28px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(21, 20, 28, 0.78) 0%, rgba(13, 13, 17, 0.78) 100%);
+    box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.9);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .workspace-top {
+    gap: 16px;
+  }
+
+  .heading-1 {
+    font-size: 2.5rem;
+  }
+
+  /* Modes: icon above the label, sharing the full width of the bar */
   .mode-trigger {
     flex: 1 0 auto !important;
+    flex-direction: column !important;
     justify-content: center !important;
+    gap: 5px !important;
+    padding: 9px 10px !important;
   }
 
-  /*
-   * Editor with a settings column beside it. This keeps the typing measure readable
-   * (about 100 characters) instead of one very wide text box, and keeps Generate
-   * above the fold. The column holds the existing controls in their existing order.
-   */
-  .workspace-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(300px, 31%, 372px);
-    grid-template-rows: auto auto auto 1fr;
-    gap: 16px 20px;
+  .mode-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* The card adds its own padding, so the editor gives up a little height here. */
+  .workspace .main-textarea {
+    min-height: clamp(240px, calc(100vh - 720px), 360px) !important;
   }
 
   .editor-card {
-    grid-column: 1;
-    grid-row: 1 / span 4;
-    display: flex;
-    flex-direction: column;
-    padding: 18px 26px 14px;
-    border-radius: 18px;
+    padding: 18px 24px 14px;
   }
 
   .main-textarea {
-    flex: 1 1 auto;
     font-size: 1.0625rem !important;
   }
 
-  .options-card {
-    grid-column: 2;
-    grid-row: 1;
-    grid-template-columns: minmax(0, 1fr);
-    align-content: start;
-  }
-
-  .personalization-panel {
-    grid-column: 2;
-    grid-row: 2;
-    min-width: 0;
-  }
-
-  .fields-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .controls-row {
-    grid-column: 2;
-    grid-row: 3;
-    align-self: start;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-
-  .generate-btn {
-    width: 100%;
-  }
-
-  /* Mode tip fills the free space under Generate in the settings column. */
   .quick-tip {
-    display: block;
-    grid-column: 2;
-    grid-row: 4;
-    align-self: start;
-    margin-top: 6px;
+    display: flex;
   }
 
-  /* Step aside when the column is already full, and while a result is shown. */
-  .personalization-panel.is-open ~ .quick-tip,
   .workspace.state-result .quick-tip {
     display: none;
   }
 
+  /* Right panel fills the card height; Humanize sits at the bottom */
   .context-panel {
     padding: 24px;
     border-radius: 22px;
+  }
+
+  .context-panel.state-empty,
+  .context-panel.state-loading {
+    position: relative;
+    top: auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .context-panel::before {
@@ -1985,26 +2012,111 @@
   }
 
   .panel-state {
-    gap: 22px;
+    flex: 1 1 auto;
+    gap: 20px;
+  }
+
+  .context-panel.state-loading .panel-state {
+    justify-content: center;
+  }
+
+  /* Quick Start as a 2 x 2 grid of tiles that fill the space above Humanize */
+  .quick-templates {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .template-grid {
+    flex: 1 1 auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
     gap: 12px;
   }
 
   .template-card {
-    padding: 14px 16px;
-    gap: 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "icon ."
+      "text arrow";
+    align-items: end;
+    align-content: center;
+    row-gap: 14px;
+    padding: 18px;
+  }
+
+  .template-title {
+    font-size: 0.98rem;
   }
 
   .template-icon {
+    grid-area: icon;
     width: 40px;
     height: 40px;
     border-radius: 11px;
   }
 
-  .spotlight {
-    padding: 20px;
+  .template-text {
+    grid-area: text;
+  }
+
+  .template-arrow {
+    grid-area: arrow;
+    align-self: center;
+  }
+
+  /* Humanize: before and after side by side, with a horizontal flow arrow */
+  .transform-demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .demo-caption {
+    grid-column: 1 / -1;
+  }
+
+  .demo-flow {
+    height: auto;
+  }
+
+  .demo-line {
+    top: 50%;
+    bottom: auto;
+    left: 5px;
+    right: 5px;
+    width: auto;
+    height: 2px;
+    margin: -1px 0 0;
+    background: linear-gradient(90deg, rgba(var(--violet), 0.25), rgba(var(--blue), 0.55));
+  }
+
+  .demo-flow::after {
+    top: 50%;
+    bottom: auto;
+    left: auto;
+    right: 5px;
+    margin: -4px 0 0;
+    transform: rotate(-45deg);
+  }
+
+  .demo-beam {
+    top: 50%;
+    left: 0;
+    width: 12px;
+    height: 6px;
+    margin: -3px 0 0;
+    animation-name: demo-beam-x-a;
+  }
+
+  .spotlight:hover .demo-beam,
+  .spotlight:focus-within .demo-beam {
+    animation-name: demo-beam-x-b;
+  }
+
+  .spotlight-cta {
+    width: 100%;
+    justify-content: center;
   }
 
   /* The result pane is wide here, so the text is larger with a ~85 character measure. */
@@ -2022,6 +2134,30 @@
     max-width: 44em;
   }
 }
+
+/* Wider panels: slightly larger Quick Start tiles so the extra height reads as intentional */
+@media (min-width: 1800px) {
+  .template-card {
+    padding: 20px 22px;
+  }
+
+  .template-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .template-title {
+    font-size: 1.04rem;
+  }
+
+  .template-desc {
+    font-size: 0.86rem;
+  }
+}
+
+@keyframes demo-beam-x-a { 0% { opacity: 0; transform: translateX(-4px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(24px); } }
+@keyframes demo-beam-x-b { 0% { opacity: 0; transform: translateX(-4px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(24px); } }
 
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {

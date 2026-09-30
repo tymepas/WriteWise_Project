@@ -1,9 +1,9 @@
 import { Lightbulb } from "lucide-react";
 
 // Static guidance about how each existing mode works; not generated or analysed text.
+// Auto has no tip: its description under the mode navigation already explains it.
 const TIPS = {
-  auto:           "Not sure which tool fits? Auto chooses the best approach for your text.",
-  grammar:        "Grammar fixes spelling and grammar while keeping your own wording and voice.",
+  grammar:       "Grammar fixes spelling and grammar while keeping your own wording and voice.",
   email:          "Add your background and job details for a more tailored email.",
   tone:           "Tone changes how your message sounds while preserving important facts.",
   rewrite:        "Choose a rewrite goal to control how your message is improved.",
@@ -14,8 +14,8 @@ const TIPS = {
 };
 
 /**
- * Small mode-aware tip for the settings column on large screens (hidden by CSS
- * elsewhere, while Personalize is open, and while a result is shown).
+ * Small mode-aware tip beside Generate on large screens (hidden by CSS on smaller
+ * ones and while a result is shown).
  */
 export default function QuickTip({ mode }) {
   const tip = TIPS[mode];
