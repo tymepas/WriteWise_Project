@@ -434,22 +434,22 @@
 .mode-nav-track.fade-right::after {
   content: "";
   position: absolute;
-  top: 50%;
-  right: 14px;
-  width: 7px;
-  height: 7px;
-  margin-top: -4px;
-  border-top: 1.5px solid #A5B4FC;
-  border-right: 1.5px solid #A5B4FC;
-  transform: rotate(45deg);
-  opacity: 0.85;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 52px;
+  border-radius: 0 13px 13px 0;
+  /* Chevron on a translucent dark backing, so it never sits on readable tab text */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5' fill='none' stroke='%23A5B4FC' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center / 12px 12px,
+    linear-gradient(90deg, rgba(15, 15, 19, 0) 0%, rgba(15, 15, 19, 0.9) 55%, rgba(15, 15, 19, 0.96) 100%);
   pointer-events: none;
   animation: scroll-nudge 1.6s var(--ease-in-out) 0.8s 3;
 }
 
 @keyframes scroll-nudge {
-  0%, 100% { transform: translateX(0) rotate(45deg); }
-  50%      { transform: translateX(3px) rotate(45deg); }
+  0%, 100% { background-position: right 12px center, 0 0; }
+  50%      { background-position: right 9px center, 0 0; }
 }
 
 .modes-list {
@@ -1927,12 +1927,17 @@
   .workspace {
     grid-template-columns: min(calc((100% - 32px) * 0.64), calc(100% - 460px)) minmax(0, 1fr);
     gap: 32px;
-    /* Both cards share one height while the page is empty or loading */
+    /* The loading panel matches the workspace height so the loader sits centred */
     align-items: stretch;
   }
 
   .workspace.state-result {
     align-items: start;
+  }
+
+  /* Quick Start / Humanize ends at its natural height rather than stretching to match */
+  .context-panel.state-empty {
+    align-self: start;
   }
 
   .workspace-primary {
@@ -2020,17 +2025,9 @@
     justify-content: center;
   }
 
-  /* Quick Start as a 2 x 2 grid of tiles that fill the space above Humanize */
-  .quick-templates {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-  }
-
+  /* Quick Start as a 2 x 2 grid of compact cards at their natural height */
   .template-grid {
-    flex: 1 1 auto;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 1fr;
     gap: 12px;
   }
 
@@ -2040,7 +2037,6 @@
       "icon ."
       "text arrow";
     align-items: end;
-    align-content: center;
     row-gap: 14px;
     padding: 18px;
   }
@@ -2135,9 +2131,10 @@
   }
 }
 
-/* Wider panels: slightly larger Quick Start tiles so the extra height reads as intentional */
+/* Wider panels: slightly larger Quick Start cards (compact, about 180-200px tall) */
 @media (min-width: 1800px) {
   .template-card {
+    min-height: 184px;
     padding: 20px 22px;
   }
 
