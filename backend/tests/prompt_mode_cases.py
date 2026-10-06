@@ -7,6 +7,7 @@ as case-insensitive regular expressions, instead of an exact expected string:
 - must_not:    no pattern may match (invented content, abandoned instructions, doing the task)
 - order:       patterns whose first matches must appear in this order (requested sequence, chronology)
 - urls:        URLs that must appear byte for byte
+- exact:       text that must appear exactly, case-sensitive (technical names, commands, identifiers)
 - max_ratio:   output length / input length, so refined messages do not grow into prompt templates
 - max_chars:   absolute length limit for very short requests
 - one_paragraph: True when a simple request must stay a single paragraph
@@ -24,6 +25,7 @@ class Case:
     must_not: List[str] = field(default_factory=list)
     order: List[str] = field(default_factory=list)
     urls: List[str] = field(default_factory=list)
+    exact: List[str] = field(default_factory=list)
     max_ratio: float = 1.35
     max_chars: Optional[int] = None
     one_paragraph: bool = False
@@ -38,6 +40,7 @@ CASES = [
         "what should i check first",
         must=[r"python", r"csv", r"5,?000\b", r"500,?000", r"slow", r"memory", r"columns",
               r"tried", r"caus", r"check\w*\b.{0,15}first|first.{0,30}check"],
+        exact=["python", "csv"],
     ),
     Case(
         "data_merge", "short, technical, uncertainty",
@@ -46,6 +49,7 @@ CASES = [
         "are causing it",
         must=[r"pandas", r"120(,000|k)", r"210(,000|k)", r"duplicat", r"\bthink\b|suspect|may be|might be|seems",
               r"why", r"(identify|find|which).{0,40}(records|rows)"],
+        exact=["pandas"],
     ),
     Case(
         "power_bi_dashboard", "medium, business, constraints",
@@ -56,6 +60,7 @@ CASES = [
         must=[r"power bi", r"sales", r"revenue", r"orders", r"average order value", r"customer count", r"region",
               r"product category", r"month", r"crowded|cluttered", r"first page", r"second page", r"layout",
               r"management", r"quick"],
+        exact=["power bi"],
     ),
     Case(
         "job_application", "medium, business, multi-request",
@@ -92,6 +97,7 @@ CASES = [
         must=[r"python", r"sql", r"power bi", r"basic", r"intermediate", r"genai|generative ai",
               r"theory", r"projects?", r"\bapis?\b", r"\brag\b", r"agents", r"evaluation", r"deployment",
               r"learning path"],
+        exact=["python", "sql", "power bi", "genai"],
     ),
     Case(
         "course_comparison", "medium, conversational, exclusion",
@@ -110,6 +116,7 @@ CASES = [
         "headers i should inspect",
         must=[r"external api|\bapi\b", r"postman", r"next\.?\s?js", r"401", r"403", r"already", r"url",
               r"differ", r"headers", r"logs"],
+        exact=["postman", "next js"],
     ),
     Case(
         "meeting_followup", "medium, business, multi-request, exclusion, chronology",
@@ -133,6 +140,7 @@ CASES = [
               r"battery", r"home", r"office", r"90,?000", r"16 ?gb", r"32 ?gb", r"compar",
               r"most sense|best (fit|suits)|which one"],
         must_not=[r"\$\s?90", r"90,?000 (usd|dollars)"],
+        exact=["python", "power bi", "sql"],
         max_ratio=1.15,
     ),
     Case(
@@ -152,6 +160,7 @@ CASES = [
         "tell me which one you would pick for my situation",
         must=[r"\baws\b", r"azure", r"cost", r"pick|choose|recommend|select"],
         must_not=[r"which cloud is (the )?best", r"no actually"],
+        exact=["aws", "azure"],
         order=[r"compar", r"pick|choose|recommend|select"],
         max_ratio=1.3,
     ),
@@ -221,6 +230,35 @@ CASES = [
         must=[r"checklist", r"release", r"tuesday", r"testing", r"doc"],
         must_not=[r"friday", r"no sorry"],
         max_ratio=1.4, one_paragraph=True,
+    ),
+    # Sentence type: "right now" starts a statement; it is not a "right?" tag on the sentence before.
+    Case(
+        "right_now_statement", "medium, technical, statements stay statements",
+        "the staging server is already on node 18 and that is a different setup, right now i want to upgrade "
+        "only the worker service to node 20 so the main app is not affected. what should i check before i do it",
+        must=[r"staging", r"node 18", r"different", r"worker service", r"node 20", r"main app", r"check"],
+        must_not=[r"right\?", r"correct\?", r"isn'?t it\?", r"\bI (believe|think|assume|guess)\b",
+                  r"\b(is|does) (the )?staging server\b"],
+        exact=["node 18", "node 20"],
+    ),
+    Case(
+        "genuine_right_question", "short, a real question stays a question",
+        "the free plan only allows 3 projects, right? if yes i want to know whether archived projects also count "
+        "toward that limit",
+        must=[r"free plan", r"3 projects", r"archived", r"limit"],
+        # The user is unsure about the limit, so it must still be asked, not stated as fact.
+        must_not=[r"^\s*the free plan only allows 3 projects\.", r"since the free plan only allows"],
+        order=[r"3 projects[^.!]*\?", r"archived"],
+    ),
+    # Technical wording is copied exactly: no expansion, normalization or re-capitalization.
+    Case(
+        "technical_wording", "medium, technical, abbreviations, commands, identifiers",
+        "our k8s pods restart every few hours and the gh actions deploy job also fails sometimes. i already ran "
+        "kubectl rollout restart deploy/api-gateway and set MAX_RETRIES=5 in config.yaml but nothing changed. "
+        "can you explain what could cause both",
+        must=[r"pods", r"restart", r"deploy job", r"already", r"nothing changed|did not change|no change|didn't"],
+        must_not=[r"kubernetes", r"github actions"],
+        exact=["k8s", "gh actions", "kubectl rollout restart deploy/api-gateway", "MAX_RETRIES=5", "config.yaml"],
     ),
 ]
 

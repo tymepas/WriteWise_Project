@@ -46,6 +46,8 @@ def test_refined_message_keeps_the_meaning(case):
     assert out.strip()
     for url in case.urls:
         assert url in out, f"URL changed or missing: {url}"
+    for text in case.exact:
+        assert text in out, f"technical wording changed: {text!r}"
     for pattern in case.must:
         assert re.search(pattern, out, re.IGNORECASE), f"lost: /{pattern}/"
     for pattern in case.must_not:

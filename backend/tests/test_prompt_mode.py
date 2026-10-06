@@ -118,6 +118,11 @@ def test_system_message_keeps_the_core_rules():
         "Never summarize away details",
         "Already clear: make minimal changes.",
         "Never add generic sections such as Context, Goal, Requirements, Constraints, Expected Output",
+        "A statement stays a statement, a question stays a question",
+        "Never split it into a \"right?\" question tag",
+        "Never expand, shorten, normalize, correct or re-capitalize them unless the user asks you to",
+        "well-known names and acronyms the user typed in lowercase",
+        "a command or identifier is copied character for character",
     ]:
         assert rule in s, rule
 

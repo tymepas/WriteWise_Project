@@ -364,11 +364,13 @@ Example (fictional):
 
 > **You type:** hey i have a python script which works fine when i test it with a csv around 5000 rows but when i use around 500000 rows it becomes really slow and sometimes memory usage goes very high i already tried removing some columns but it didnt make much difference please explain what could be causing this and what should i check first
 >
-> **WriteWise returns:** I have a Python script that works fine with a CSV of around 5,000 rows, but with around 500,000 rows it becomes very slow and memory usage sometimes gets very high. I already tried removing some columns, but it did not make much difference. Please explain what could be causing this and what I should check first.
+> **WriteWise returns:** I have a python script that works fine with a csv of around 5,000 rows, but with around 500,000 rows it becomes very slow and memory usage sometimes gets very high. I already tried removing some columns, but it did not make much difference. Please explain what could be causing this and what I should check first.
 
 Core rule: **clarify and organize, never reinterpret.**
 - It fixes grammar, removes filler and repetition, and orders scattered thoughts. Several distinct requests can become a short list; a simple request stays one paragraph.
-- It keeps every question, fact, number, date, constraint, decision, exclusion ("don't include pricing"), what you already tried, your uncertainty, names and terms as you wrote them, references to files, and links.
+- It keeps every question, fact, number, date, constraint, decision, exclusion ("don't include pricing"), what you already tried, your uncertainty, references to files, and links.
+- Each part stays the same kind of sentence: a statement is never turned into a question or a belief (no added "right?" or "I believe"), and a question stays a question.
+- Technical wording is kept exactly as typed, including capitalization: names, abbreviations, commands and identifiers ("k8s", "gh actions", "power bi", `MAX_RETRIES=5`) are never expanded, normalized or re-capitalized.
 - When you correct yourself ("no wait, first..."), only the final version is kept.
 - It keeps instructions to the assistant separate from content the assistant should write for someone else.
 - It never answers or performs the request, never claims to have opened a link or file, and never adds a persona ("You are an expert..."), template sections, requirements, questions or advice. Long messages are reorganized, not summarized.
