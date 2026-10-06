@@ -14,7 +14,7 @@ Fix grammar, rewrite content, generate emails, paraphrase text, summarize docume
 
 ## Features
 
-### 9 Writing Modes
+### 10 Writing Modes
 
 | Mode | What it does |
 |------|-------------|
@@ -27,6 +27,7 @@ Fix grammar, rewrite content, generate emails, paraphrase text, summarize docume
 | **Summarize** | Extracts key points as a short summary or bullet points |
 | **Expand / Shorten** | Adds depth or trims text down to what matters |
 | **Humanize** | Removes AI-like phrasing and makes text sound naturally written |
+| **Prompt** | Turns a rough, natural-language message into a clear, LLM-ready request you can paste into ChatGPT, Claude or Gemini, keeping your meaning. See [Prompt Mode](#prompt-mode) |
 
 ### Smart Features
 
@@ -70,7 +71,9 @@ writewise/
 │   ├── index.py           # Vercel entrypoint; re-exports the FastAPI app from backend/server.py
 │   └── requirements.txt   # Runtime Python dependencies (used by Vercel and by backend/requirements.txt)
 ├── backend/
-│   ├── server.py          # FastAPI app, all 10 writing modes, prompt construction, OpenAI call
+│   ├── server.py          # FastAPI app, all writing modes, prompt construction, OpenAI call
+│   ├── prompt_mode.py     # Prompt mode: its own instructions, URL protection, output cleanup
+│   ├── secret_redaction.py # Removes obvious API keys, tokens and passwords (Prompt mode)
 │   ├── requirements.txt   # Runtime deps (via api/requirements.txt) + uvicorn and test tools
 │   ├── tests/             # Mocked API tests; tests/integration/ holds opt-in live OpenAI tests
 │   ├── .env.example       # Template for backend/.env
@@ -179,11 +182,13 @@ With the backend virtual environment active, from the repository root:
 pytest backend/tests
 ```
 
-This runs the mocked tests (`backend/tests/test_api_mocked.py`), which use a fake OpenAI client: no network calls and no API cost. The live tests in `backend/tests/integration/` call a running backend and the real OpenAI API, so they are skipped unless you enable them:
+This runs the mocked tests (`backend/tests/test_api_mocked.py` and `backend/tests/test_prompt_mode.py`), which use a fake OpenAI client: no network calls and no API cost. The live tests in `backend/tests/integration/` call a running backend and the real OpenAI API, so they are skipped unless you enable them:
 
 ```bash
 WRITEWISE_LIVE_TESTS=1 REACT_APP_BACKEND_URL=http://127.0.0.1:8001 pytest backend/tests/integration
 ```
+
+To run only the Prompt mode tests, use `pytest backend/tests/test_prompt_mode.py` (mocked) or add `-s` to the live command with `backend/tests/integration/test_prompt_mode_live.py` to print each fictional golden input and its output for review.
 
 ---
 
@@ -245,7 +250,7 @@ Generate writing output based on the selected mode.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `mode` | string | Yes | One of: `auto`, `grammar`, `email`, `tone`, `rewrite`, `paraphrase`, `summarize`, `expand`, `shorten`, `humanize` |
+| `mode` | string | Yes | One of: `auto`, `grammar`, `email`, `tone`, `rewrite`, `paraphrase`, `summarize`, `expand`, `shorten`, `humanize`, `prompt` |
 | `input` | string | Yes | The text to process |
 | `context` | string | No | Extra instructions (e.g. "Keep it concise for a client email") |
 | `experience` | string | No | User's work experience (for personalization) |
@@ -285,6 +290,8 @@ Generate writing output based on the selected mode.
 - `why_good_fit` is `null` unless the input is a job posting and the user supplied their own background.
 - `evaluation` is `null` if the model did not return valid 1-10 scores. `evaluation.personalization` is `null` when no `experience`, `target_role` or `skills` were sent. `evaluation.suggestion` may be `null`.
 - `detected_mode` is `email` or `rewrite` in Auto mode, otherwise `null`.
+- `secrets_redacted` (Prompt mode only) is the number of possible secrets (API keys, tokens, passwords) removed from the text before it was sent to OpenAI, or `null` when there were none.
+- In `prompt` mode, `context`, `experience`, `target_role`, `skills` and `variations` are ignored, and `variations`, `why_good_fit` and `evaluation` are always `null`.
 
 **Errors** are returned as `{"detail": "<message safe to show the user>"}`; internal error text is only logged on the server.
 
@@ -349,6 +356,45 @@ If input is a job posting, generates a personalized job application email. If in
 - **Short Summary** — 2 to 3 sentence overview
 - **Bullet Points** — 4 to 6 key points
 
+### Prompt Mode
+
+**Write naturally. Keep your meaning.** Prompt mode transforms a rough, natural-language message into a clear, concise, LLM-ready request while preserving your original intent. You type the way you think, copy the result, paste it into ChatGPT, Claude, Gemini or another assistant, and carry on the conversation. It is not a prompt-engineering tool: the result reads like a clear message from you, not a template.
+
+Example (fictional):
+
+> **You type:** hey i have a python script which works fine when i test it with a csv around 5000 rows but when i use around 500000 rows it becomes really slow and sometimes memory usage goes very high i already tried removing some columns but it didnt make much difference please explain what could be causing this and what should i check first
+>
+> **WriteWise returns:** I have a Python script that works fine with a CSV of around 5,000 rows, but with around 500,000 rows it becomes very slow and memory usage sometimes gets very high. I already tried removing some columns, but it did not make much difference. Please explain what could be causing this and what I should check first.
+
+Core rule: **clarify and organize, never reinterpret.**
+- It fixes grammar, removes filler and repetition, and orders scattered thoughts. Several distinct requests can become a short list; a simple request stays one paragraph.
+- It keeps every question, fact, number, date, constraint, decision, exclusion ("don't include pricing"), what you already tried, your uncertainty, names and terms as you wrote them, references to files, and links.
+- When you correct yourself ("no wait, first..."), only the final version is kept.
+- It keeps instructions to the assistant separate from content the assistant should write for someone else.
+- It never answers or performs the request, never claims to have opened a link or file, and never adds a persona ("You are an expert..."), template sections, requirements, questions or advice. Long messages are reorganized, not summarized.
+
+How it differs from the other modes: Grammar only fixes errors, and Rewrite or Paraphrase polish text for a human reader. Prompt mode clarifies a request for an AI reader and is stricter about not adding or dropping anything. It has no style options, extra-context field or variations. In Prompt mode, **Try an example** fills the editor with a fictional rough message (a different one each click).
+
+How it works:
+- It uses its own instructions (`backend/prompt_mode.py`) with the same OpenAI client, model and error handling as the other modes.
+- Links are replaced by placeholders such as `⟦URL_1: docs.example.com⟧` before the text is sent and put back where the model placed them, so every URL comes back byte for byte. The model sees only each link's website, never the path or query.
+- If the model drops, repeats or invents a link placeholder, WriteWise asks once more with a correction. If that also fails, it returns an error instead of guessing where a link belongs.
+- Wrappers the model sometimes adds (code fences, "Refined prompt:" labels, surrounding quotes) are removed, and an empty result is reported as an error.
+
+Limitations:
+- Intent preservation depends on the model. The golden tests (`backend/tests/prompt_mode_cases.py`, all fictional) catch clear failures, but outputs deserve a quick read before you send them.
+- Links are validated deterministically (each one present once, none invented), but whether the sentence around a link describes it correctly depends on the model, which sees only the website.
+- A message whose links are mishandled twice in a row returns an error; trying again usually works.
+
+### Secret Redaction (Prompt mode)
+
+Before a Prompt mode request reaches OpenAI, the backend replaces obvious credentials with `[REDACTED SECRET]`:
+- OpenAI-style `sk-` keys, AWS access key IDs, GitHub, Google, Slack and Stripe keys, JWTs and `Bearer` tokens
+- Private key blocks
+- Assignments such as `OPENAI_API_KEY=...` or `password: ...` whose value contains a digit or is 16+ characters long
+
+The UI shows a warning when something was removed. Only the number and kind of secrets are logged, never the values. In this version the other modes are unchanged and do not redact. This is a basic safety net, not a complete secret scanner: unusual formats and secrets written as plain words are not detected, and the generic assignment rule skips text inside URLs so query strings are never altered.
+
 ---
 
 ## Design
@@ -356,7 +402,7 @@ If input is a job posting, generates a personalized job application email. If in
 - Dark theme (`#09090B` background)
 - IBM Plex Sans for body text
 - JetBrains Mono for labels, badges, and code-style UI
-- Scrollable tab row for all 9 modes
+- Scrollable tab row for all 10 modes
 - Minimal, distraction-free single-page layout
 - Fade-in animations on output render
 - Animated score bars on evaluation display

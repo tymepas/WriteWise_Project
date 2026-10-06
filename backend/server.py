@@ -22,6 +22,9 @@ from openai import (
     RateLimitError,
 )
 
+import prompt_mode
+from secret_redaction import redact_secrets
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -66,8 +69,10 @@ logger = logging.getLogger(__name__)
 
 VALID_MODES = {
     "auto", "grammar", "email", "tone", "rewrite",
-    "paraphrase", "summarize", "expand", "shorten", "humanize"
+    "paraphrase", "summarize", "expand", "shorten", "humanize", "prompt"
 }
+
+UNEXPECTED_RESPONSE = "The AI service returned an unexpected response. Please try again."
 
 SYSTEM_MESSAGE = (
     "You are WriteWise, a sharp AI writing assistant for professionals and job seekers. "
@@ -183,6 +188,8 @@ class GenerateResponse(BaseModel):
     detected_mode: Optional[str] = None
     why_good_fit: Optional[List[str]] = None
     evaluation: Optional[EvaluationScore] = None
+    # Prompt mode only: how many possible secrets were removed before calling OpenAI; None when none.
+    secrets_redacted: Optional[int] = None
 
 
 def build_profile_section(req: GenerateRequest) -> str:
@@ -509,6 +516,100 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(status_code=400, content={"detail": " ".join(messages) or "Invalid request."})
 
 
+async def request_model(instructions: str, prompt: str, req: GenerateRequest) -> str:
+    """One OpenAI call. Returns the raw text, or raises an HTTPException for a cut-off response."""
+    response = await openai_client.responses.create(
+        model=OPENAI_MODEL,
+        instructions=instructions,
+        input=prompt,
+        # The prompts already demand raw JSON; JSON mode guarantees it is well-formed.
+        text={"format": {"type": "json_object"}},
+        max_output_tokens=MAX_OUTPUT_TOKENS,
+    )
+
+    # A cut-off response is not valid JSON, so never show it as a result.
+    if response.status == "incomplete":
+        reason = getattr(response.incomplete_details, "reason", None)
+        logger.warning(
+            "OpenAI response incomplete: reason=%s mode=%s input_chars=%d variations=%s",
+            reason, req.mode, len(req.input), req.variations,
+        )
+        if reason == "max_output_tokens":
+            raise HTTPException(
+                status_code=422,
+                detail="The result was too long to generate in full. "
+                       "Try a shorter text, or turn off Multiple versions.",
+            )
+        if reason == "content_filter":
+            raise HTTPException(
+                status_code=422,
+                detail="This text could not be processed by the AI service. Please try different text.",
+            )
+        raise HTTPException(
+            status_code=502,
+            detail="The AI service could not complete this request. Please try again.",
+        )
+
+    return response.output_text
+
+
+def refined_text(raw_response: str, masked_input: str) -> str:
+    """The refined message from a Prompt mode response, still containing link placeholders."""
+    try:
+        # Plain JSON first: the lenient parser strips ``` everywhere, which would remove
+        # code blocks the user put in their message.
+        data = json.loads(raw_response)
+    except (json.JSONDecodeError, TypeError):
+        try:
+            data = parse_model_response(raw_response)
+        except (json.JSONDecodeError, AttributeError, TypeError) as e:
+            logger.warning("JSON parse failed: %s", type(e).__name__)
+            data = None
+    text = prompt_mode.clean_output(data.get("output"), masked_input) if isinstance(data, dict) else ""
+    if not text:
+        logger.warning("Model response had no usable text: mode=prompt")
+        raise HTTPException(status_code=502, detail=UNEXPECTED_RESPONSE)
+    return text
+
+
+async def generate_prompt_mode(req: GenerateRequest) -> GenerateResponse:
+    """Refine a rough message into a clear request for another AI, keeping its meaning."""
+    # Obvious secrets never reach OpenAI. Only the kind and count are logged, never the values.
+    user_text, kinds = redact_secrets(req.input)
+    if kinds:
+        logger.warning("Redacted %d possible secret(s) before calling OpenAI: kinds=%s mode=prompt",
+                       len(kinds), ",".join(sorted(set(kinds))))
+
+    # Context, profile and variations are not used: Prompt mode refines only the message itself.
+    masked_input, urls = prompt_mode.mask_urls(user_text)
+    text = refined_text(
+        await request_model(prompt_mode.SYSTEM_MESSAGE, prompt_mode.build_prompt(masked_input), req),
+        masked_input,
+    )
+
+    # Links are restored only where the model placed them. If it dropped, invented or repeated a
+    # placeholder, ask once more; never guess where a link belongs.
+    problem = prompt_mode.link_problem(text, masked_input)
+    if problem:
+        logger.warning("Prompt mode link placeholders not kept, retrying once: %s urls=%d", problem, len(urls))
+        text = refined_text(
+            await request_model(prompt_mode.SYSTEM_MESSAGE, prompt_mode.build_retry_prompt(masked_input, problem), req),
+            masked_input,
+        )
+        problem = prompt_mode.link_problem(text, masked_input)
+        if problem:
+            logger.warning("Prompt mode link placeholders not kept after retry: %s urls=%d", problem, len(urls))
+            raise HTTPException(
+                status_code=502,
+                detail="WriteWise could not keep your links intact this time. Please try again.",
+            )
+
+    output = remove_invented_placeholder_lines(prompt_mode.restore_urls(text, urls), user_text)
+    if not output.strip():
+        raise HTTPException(status_code=502, detail=UNEXPECTED_RESPONSE)
+    return GenerateResponse(output=output, mode=req.mode, secrets_redacted=len(kinds) or None)
+
+
 @api_router.get("/")
 async def root():
     return {"message": "WriteWise API"}
@@ -532,42 +633,11 @@ async def generate_text(req: GenerateRequest):
             max_retries=OPENAI_MAX_RETRIES,
         )
 
-    prompt = build_prompt(req)
-
     try:
-        response = await openai_client.responses.create(
-            model=OPENAI_MODEL,
-            instructions=SYSTEM_MESSAGE,
-            input=prompt,
-            # The prompts already demand raw JSON; JSON mode guarantees it is well-formed.
-            text={"format": {"type": "json_object"}},
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-        )
+        if req.mode == "prompt":
+            return await generate_prompt_mode(req)
 
-        # A cut-off response is not valid JSON, so never show it as a result.
-        if response.status == "incomplete":
-            reason = getattr(response.incomplete_details, "reason", None)
-            logger.warning(
-                "OpenAI response incomplete: reason=%s mode=%s input_chars=%d variations=%s",
-                reason, req.mode, len(req.input), req.variations,
-            )
-            if reason == "max_output_tokens":
-                raise HTTPException(
-                    status_code=422,
-                    detail="The result was too long to generate in full. "
-                           "Try a shorter text, or turn off Multiple versions.",
-                )
-            if reason == "content_filter":
-                raise HTTPException(
-                    status_code=422,
-                    detail="This text could not be processed by the AI service. Please try different text.",
-                )
-            raise HTTPException(
-                status_code=502,
-                detail="The AI service could not complete this request. Please try again.",
-            )
-
-        raw_response = response.output_text
+        raw_response = await request_model(SYSTEM_MESSAGE, build_prompt(req), req)
 
         try:
             data = parse_model_response(raw_response)

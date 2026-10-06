@@ -19,6 +19,7 @@ import HumanizeSpotlight, { HUMANIZE_EXAMPLE } from "@/components/HumanizeSpotli
 import CharCount, { LIMITS, warnIfPasteTooLong } from "@/components/CharCount";
 import HowItWorks from "@/components/HowItWorks";
 import QuickTip from "@/components/QuickTip";
+import PROMPT_EXAMPLES from "@/promptExamples";
 
 // Empty in production so requests go to the same origin (/api on Vercel).
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
@@ -34,6 +35,7 @@ const MODES = [
   { id: "summarize",     label: "Summarize",         description: "Extract the key points in a concise format" },
   { id: "expand_shorten",label: "Expand / Shorten",  description: "Add depth or trim it down to what matters" },
   { id: "humanize",      label: "Humanize",          description: "Remove AI-like phrasing. Make it sound naturally written" },
+  { id: "prompt",        label: "Prompt",            description: "Turn your rough message into a clear prompt while keeping your meaning" },
 ];
 
 const PLACEHOLDERS = {
@@ -46,6 +48,7 @@ const PLACEHOLDERS = {
   summarize:      "Paste the article, report, or document you want summarized...",
   expand_shorten: "Paste the text you want to expand or shorten...",
   humanize:       "Paste AI-generated or overly formal text to make it sound human...",
+  prompt:         "Write your request for an AI the way you'd say it. WriteWise cleans it up and keeps your meaning...",
 };
 
 // Short enough to fit the context field on a 390px phone without clipping.
@@ -70,6 +73,7 @@ const LOADING_MSGS = {
   paraphrase:     "Paraphrasing...",
   summarize:      "Summarizing...",
   humanize:       "Humanizing...",
+  prompt:         "Refining...",
 };
 
 const DEFAULT_OPTIONS = {
@@ -107,6 +111,8 @@ function saveProfile(profile) {
 
 const SHOW_VARIATIONS = ["auto", "email", "rewrite", "tone", "paraphrase"];
 const SHOW_PERSONALIZATION = ["auto", "email", "rewrite", "tone", "humanize"];
+// Prompt mode refines only what is in the editor, so it has no extra instructions field.
+const SHOW_CONTEXT = (mode) => mode !== "prompt";
 
 const EXAMPLE_TEXT = `Senior Product Designer at DesignCo
 
@@ -129,6 +135,7 @@ function getButtonLabel(mode, expandShortenMode) {
   if (mode === "expand_shorten") {
     return expandShortenMode === "expand" ? "Expand" : "Shorten";
   }
+  if (mode === "prompt") return "Refine";
   return "Generate";
 }
 
@@ -263,7 +270,7 @@ export default function App() {
     return {
       mode: actualMode,
       input: input.trim(),
-      context: context.trim() || null,
+      context: SHOW_CONTEXT(mode) ? context.trim() || null : null,
       experience: experience.trim() || null,
       target_role: targetRole.trim() || null,
       skills: skills.trim() || null,
@@ -281,7 +288,14 @@ export default function App() {
     setResult(null);
     try {
       const { data } = await axios.post(`${API}/generate`, buildPayload());
-      if (requestId === requestIdRef.current) setResult(data);
+      if (requestId !== requestIdRef.current) return;
+      setResult(data);
+      if (data?.secrets_redacted) {
+        const count = data.secrets_redacted;
+        toast.warning(`Removed ${count} possible secret${count === 1 ? "" : "s"} before processing`, {
+          description: "Text that looked like an API key, password or token was replaced before it was sent to the AI.",
+        });
+      }
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
       // Only show server messages that are plain text (not HTML error pages or objects).
@@ -301,7 +315,7 @@ export default function App() {
 
   const handleGenerate = async () => {
     if (!input.trim()) {
-      toast.error("Please enter some text first.");
+      toast.error(mode === "prompt" ? "Please enter something to refine." : "Please enter some text first.");
       return;
     }
     // When the panes are stacked, move to the panel so the loading state is visible.
@@ -311,9 +325,17 @@ export default function App() {
     await runGenerate();
   };
 
+  // In Prompt mode the example is a rough message to refine (a different one each click);
+  // everywhere else it is the job posting, shown in Email mode.
+  const promptExampleRef = useRef(0);
   const handleTryExample = () => {
-    setInput(EXAMPLE_TEXT);
-    setMode("email");
+    if (mode === "prompt") {
+      setInput(PROMPT_EXAMPLES[promptExampleRef.current % PROMPT_EXAMPLES.length]);
+      promptExampleRef.current += 1;
+    } else {
+      setInput(EXAMPLE_TEXT);
+      setMode("email");
+    }
     discardResult();
     showEditor();
   };
@@ -409,40 +431,42 @@ export default function App() {
               </div>
 
               {/* Mode options and extra instructions */}
-              <div className="options-card">
-                <TabOptions
-                  mode={mode}
-                  paraphraseMode={paraphraseMode}
-                  onParaphraseMode={setParaphraseMode}
-                  summaryType={summaryType}
-                  onSummaryType={setSummaryType}
-                  expandShortenMode={expandShortenMode}
-                  onExpandShortenMode={setExpandShortenMode}
-                  tone={tone}
-                  onTone={setTone}
-                  rewriteGoal={rewriteGoal}
-                  onRewriteGoal={setRewriteGoal}
-                  disabled={loading}
-                />
-                <div className="option-field">
-                  <div className="field-label-row">
-                    <label className="input-label" htmlFor="context-input">Additional context (optional)</label>
-                    <CharCount id="context-input-count" value={context} max={LIMITS.context} />
-                  </div>
-                  <Input
-                    id="context-input"
-                    data-testid="context-input"
-                    value={context}
-                    onChange={(e) => setContext(e.target.value)}
-                    onPaste={(e) => warnIfPasteTooLong(e, LIMITS.context, "Additional context")}
-                    maxLength={LIMITS.context}
-                    aria-describedby="context-input-count"
-                    placeholder={CONTEXT_PLACEHOLDERS[mode]}
-                    className="context-input"
+              {SHOW_CONTEXT(mode) && (
+                <div className="options-card">
+                  <TabOptions
+                    mode={mode}
+                    paraphraseMode={paraphraseMode}
+                    onParaphraseMode={setParaphraseMode}
+                    summaryType={summaryType}
+                    onSummaryType={setSummaryType}
+                    expandShortenMode={expandShortenMode}
+                    onExpandShortenMode={setExpandShortenMode}
+                    tone={tone}
+                    onTone={setTone}
+                    rewriteGoal={rewriteGoal}
+                    onRewriteGoal={setRewriteGoal}
                     disabled={loading}
                   />
+                  <div className="option-field">
+                    <div className="field-label-row">
+                      <label className="input-label" htmlFor="context-input">Additional context (optional)</label>
+                      <CharCount id="context-input-count" value={context} max={LIMITS.context} />
+                    </div>
+                    <Input
+                      id="context-input"
+                      data-testid="context-input"
+                      value={context}
+                      onChange={(e) => setContext(e.target.value)}
+                      onPaste={(e) => warnIfPasteTooLong(e, LIMITS.context, "Additional context")}
+                      maxLength={LIMITS.context}
+                      aria-describedby="context-input-count"
+                      placeholder={CONTEXT_PLACEHOLDERS[mode]}
+                      className="context-input"
+                      disabled={loading}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {SHOW_PERSONALIZATION.includes(mode) && (
                 <PersonalizationPanel

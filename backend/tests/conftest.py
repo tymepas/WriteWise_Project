@@ -7,3 +7,5 @@ from pathlib import Path
 os.environ["OPENAI_API_KEY"] = "test-key-not-real"
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# Shared test data such as prompt_mode_cases.py, also used by the live tests.
+sys.path.insert(0, str(Path(__file__).resolve().parent))

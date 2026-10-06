@@ -11,6 +11,7 @@ const TIPS = {
   summarize:      "Choose a short summary or bullet points, depending on how you'll use it.",
   expand_shorten: "Use Additional context to say what to expand or what must stay in.",
   humanize:       "Humanize keeps your meaning while making AI-like phrasing feel more natural.",
+  prompt:         "Write naturally. Prompt cleans up your message so you can paste it into ChatGPT, Claude or Gemini, without changing what you asked.",
 };
 
 /**

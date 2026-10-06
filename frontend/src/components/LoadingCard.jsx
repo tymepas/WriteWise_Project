@@ -11,6 +11,7 @@ const LOADING_LABELS = {
   expand:         "Expanding...",
   shorten:        "Shortening...",
   humanize:       "Humanizing the text...",
+  prompt:         "Refining your prompt...",
 };
 
 // Purely decorative words for the animation; they are not real processing steps.
