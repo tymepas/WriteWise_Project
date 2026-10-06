@@ -7,7 +7,8 @@ as case-insensitive regular expressions, instead of an exact expected string:
 - must_not:    no pattern may match (invented content, abandoned instructions, doing the task)
 - order:       patterns whose first matches must appear in this order (requested sequence, chronology)
 - urls:        URLs that must appear byte for byte
-- exact:       text that must appear exactly, case-sensitive (technical names, commands, identifiers)
+- exact:       text that must appear exactly, case-sensitive (technical tokens kept as typed, or brand names
+               after normal proofreading)
 - max_ratio:   output length / input length, so refined messages do not grow into prompt templates
 - max_chars:   absolute length limit for very short requests
 - one_paragraph: True when a simple request must stay a single paragraph
@@ -40,7 +41,6 @@ CASES = [
         "what should i check first",
         must=[r"python", r"csv", r"5,?000\b", r"500,?000", r"slow", r"memory", r"columns",
               r"tried", r"caus", r"check\w*\b.{0,15}first|first.{0,30}check"],
-        exact=["python", "csv"],
     ),
     Case(
         "data_merge", "short, technical, uncertainty",
@@ -60,7 +60,6 @@ CASES = [
         must=[r"power bi", r"sales", r"revenue", r"orders", r"average order value", r"customer count", r"region",
               r"product category", r"month", r"crowded|cluttered", r"first page", r"second page", r"layout",
               r"management", r"quick"],
-        exact=["power bi"],
     ),
     Case(
         "job_application", "medium, business, multi-request",
@@ -97,7 +96,6 @@ CASES = [
         must=[r"python", r"sql", r"power bi", r"basic", r"intermediate", r"genai|generative ai",
               r"theory", r"projects?", r"\bapis?\b", r"\brag\b", r"agents", r"evaluation", r"deployment",
               r"learning path"],
-        exact=["python", "sql", "power bi", "genai"],
     ),
     Case(
         "course_comparison", "medium, conversational, exclusion",
@@ -116,7 +114,6 @@ CASES = [
         "headers i should inspect",
         must=[r"external api|\bapi\b", r"postman", r"next\.?\s?js", r"401", r"403", r"already", r"url",
               r"differ", r"headers", r"logs"],
-        exact=["postman", "next js"],
     ),
     Case(
         "meeting_followup", "medium, business, multi-request, exclusion, chronology",
@@ -140,7 +137,6 @@ CASES = [
               r"battery", r"home", r"office", r"90,?000", r"16 ?gb", r"32 ?gb", r"compar",
               r"most sense|best (fit|suits)|which one"],
         must_not=[r"\$\s?90", r"90,?000 (usd|dollars)"],
-        exact=["python", "power bi", "sql"],
         max_ratio=1.15,
     ),
     Case(
@@ -160,7 +156,6 @@ CASES = [
         "tell me which one you would pick for my situation",
         must=[r"\baws\b", r"azure", r"cost", r"pick|choose|recommend|select"],
         must_not=[r"which cloud is (the )?best", r"no actually"],
-        exact=["aws", "azure"],
         order=[r"compar", r"pick|choose|recommend|select"],
         max_ratio=1.3,
     ),
@@ -239,18 +234,17 @@ CASES = [
         must=[r"staging", r"node 18", r"different", r"worker service", r"node 20", r"main app", r"check"],
         must_not=[r"right\?", r"correct\?", r"isn'?t it\?", r"\bI (believe|think|assume|guess)\b",
                   r"\b(is|does) (the )?staging server\b"],
-        exact=["node 18", "node 20"],
     ),
     Case(
         "genuine_right_question", "short, a real question stays a question",
         "the free plan only allows 3 projects, right? if yes i want to know whether archived projects also count "
         "toward that limit",
-        must=[r"free plan", r"3 projects", r"archived", r"limit"],
+        must=[r"free plan", r"(3|three) projects", r"archived", r"limit"],
         # The user is unsure about the limit, so it must still be asked, not stated as fact.
-        must_not=[r"^\s*the free plan only allows 3 projects\.", r"since the free plan only allows"],
-        order=[r"3 projects[^.!]*\?", r"archived"],
+        must_not=[r"^\s*the free plan only allows (3|three) projects\.", r"since the free plan only allows"],
+        order=[r"(3|three) projects[^.!]*\?", r"archived"],
     ),
-    # Technical wording is copied exactly: no expansion, normalization or re-capitalization.
+    # Technically significant tokens are copied exactly: no expansion or re-casing.
     Case(
         "technical_wording", "medium, technical, abbreviations, commands, identifiers",
         "our k8s pods restart every few hours and the gh actions deploy job also fails sometimes. i already ran "
@@ -259,6 +253,25 @@ CASES = [
         must=[r"pods", r"restart", r"deploy job", r"already", r"nothing changed|did not change|no change|didn't"],
         must_not=[r"kubernetes", r"github actions"],
         exact=["k8s", "gh actions", "kubectl rollout restart deploy/api-gateway", "MAX_RETRIES=5", "config.yaml"],
+    ),
+    # Brand names get normal proofreading: misspelling and capitalization are corrected.
+    Case(
+        "brand_names_proofread", "short, brand names corrected",
+        "i deploy my side project on vercel and use claude code with my antropic account. how can i see how much "
+        "of my monthly usage is left",
+        must=[r"side project", r"monthly usage", r"left|remaining"],
+        must_not=[r"\bantropic\b"],
+        exact=["Vercel", "Claude Code", "Anthropic"],
+    ),
+    # Both sides at once: brand names may be proofread, technical tokens stay exact even right next to them.
+    Case(
+        "brand_names_with_exact_tokens", "medium, technical, brand names and exact tokens together",
+        "my team uses claude code for local testing and the app is deployed on vercel. i want the local setup to use "
+        "my own antropic key instead of the shared one. should ANTHROPIC_API_KEY go in .env.local or in "
+        "backend/.env, and does vercel read either of those files",
+        # Correcting "antropic" is allowed but not required here; it must never be renamed or expanded.
+        must=[r"local", r"shared", r"own", r"read", r"\b(anthropic|antropic)\b"],
+        exact=["Claude Code", "Vercel", "ANTHROPIC_API_KEY", ".env.local", "backend/.env"],
     ),
 ]
 

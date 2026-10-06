@@ -120,9 +120,11 @@ def test_system_message_keeps_the_core_rules():
         "Never add generic sections such as Context, Goal, Requirements, Constraints, Expected Output",
         "A statement stays a statement, a question stays a question",
         "Never split it into a \"right?\" question tag",
-        "Never expand, shorten, normalize, correct or re-capitalize them unless the user asks you to",
-        "well-known names and acronyms the user typed in lowercase",
-        "a command or identifier is copied character for character",
+        "Technically significant tokens exactly as the user wrote them, character for character and in the same case",
+        "Never expand, shorten, re-case or re-format them.",
+        "Correct the obvious misspelling and capitalization of a well-known brand",
+        "Informal shorthand for tools and services exactly as written",
+        "Never expand an abbreviation or swap in a different or more formal term",
     ]:
         assert rule in s, rule
 
