@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   Sparkles, SpellCheck, Mail, AudioLines, PenLine, Repeat2, AlignLeft, ChevronsUpDown, Fingerprint,
+  MessageSquareText,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -14,6 +15,7 @@ const MODE_ICONS = {
   summarize: AlignLeft,
   expand_shorten: ChevronsUpDown,
   humanize: Fingerprint,
+  prompt: MessageSquareText,
 };
 
 /**

@@ -24,6 +24,7 @@ WriteWise is an AI-powered writing platform for professionals and job seekers. I
 | Expand | Adds useful context and detail. No filler. |
 | Shorten | Cuts to core message. Preserves tone and intent. |
 | Humanize | Matches original register. Professional stays professional. Casual becomes conversational. |
+| Prompt | (Oct 2026) Turns a rough natural-language message into a clear, LLM-ready request, preserving intent. Clarify and organize, never reinterpret. Own instructions in backend/prompt_mode.py; URLs masked, validated and restored; secrets redacted. |
 
 ## AI Prompt Status: FROZEN (Apr 2026)
 - SYSTEM_MESSAGE: tone-matching, directness, no em dashes, intent preservation
